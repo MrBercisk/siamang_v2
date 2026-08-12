@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
+import { memo, useState } from 'react';
 import { HeroSection } from '../components/HeroSection';
 import { CategoriesSection } from '../components/CategoriesSection';
 import { InternshipInfoSection } from '../components/InternshipInfoSection';
@@ -24,7 +23,7 @@ interface HomePageProps {
   }) => Promise<void>;
 }
 
-export function HomePage({
+export const HomePage = memo(function HomePage({
   categories,
   schedules,
   requirements,
@@ -47,36 +46,23 @@ export function HomePage({
       <HeroSection onActionClick={() => onNavigate('info')} />
 
       {/* Categories Section */}
-      <CategoriesSection 
-        categories={categories} 
-        onSelectCategory={handleApplyCategory} 
+      <CategoriesSection
+        categories={categories}
+        onSelectCategory={handleApplyCategory}
       />
 
-      {/* Internship Detailed Info & Timeline Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <InternshipInfoSection
-          categories={categories}
-          schedules={schedules}
-          requirements={requirements}
-          applications={applications}
-          onApplyCategory={handleApplyCategory}
-          onNavigateRegister={() => onNavigate('register')}
-        />
-      </motion.div>
+      {/* Internship Detailed Info & Timeline Section – no wrapper motion to reduce observer count */}
+      <InternshipInfoSection
+        categories={categories}
+        schedules={schedules}
+        requirements={requirements}
+        applications={applications}
+        onApplyCategory={handleApplyCategory}
+        onNavigateRegister={() => onNavigate('register')}
+      />
 
       {/* Bottom Info Strip Banner */}
-      <motion.section 
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="bg-slate-100 border-y border-slate-200 py-12 px-4 sm:px-6 lg:px-8"
-      >
+      <section className="bg-slate-100 border-y border-slate-200 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-start gap-6 flex-1">
             <div className="hidden sm:block w-20 h-20 flex-shrink-0 bg-white p-2 rounded-2xl shadow-xs border border-slate-200">
@@ -84,6 +70,8 @@ export function HomePage({
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4ikSEisIsfcpmgMAKlb97wLkwAjJyICY-uvBLYe8ji5d3xMwpcZSdIy8J_JTh3sJ_E_gw61bYDGGEqNF-OlfDQSH5QWOaZ8OHwsNsgYF-BFNmAdvxHFhddOCuNntx3bbUCRXseu_CeucyrAL9SOdUMhM4g-y2MBzDQINCgm9RMRwwhA1eFenYM_z_zmlSmD0sYsBiA83KEPX7WCdbLdOKeoIRN81oSkT4ak77epkf7Yv2oAME8xXRrA"
                 alt="Support Illustration"
                 className="w-full h-full object-contain"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             <div>
@@ -106,7 +94,7 @@ export function HomePage({
             Hubungi Kami
           </button>
         </div>
-      </motion.section>
+      </section>
 
       {/* Modal Application Form */}
       <ApplicationModal
@@ -118,5 +106,4 @@ export function HomePage({
       />
     </div>
   );
-}
-
+});

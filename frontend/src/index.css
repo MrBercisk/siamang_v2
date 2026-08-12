@@ -21,8 +21,42 @@
   --font-inter: "Inter", sans-serif;
 }
 
+/* ─── Performance baseline ─────────────────────────────────────────────────── */
+html {
+  /* Use momentum-based scrolling on iOS for smooth native feel */
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   font-family: var(--font-inter);
+  /* Prevent sub-pixel reflows caused by font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Section paint containment ─────────────────────────────────────────────
+   Isolates each page section into its own CSS stacking context so the browser
+   only needs to repaint the section being changed, not the whole page.       */
+main > *,
+main section {
+  contain: layout style;
+}
+
+/* ─── GPU compositing hint for animated elements ───────────────────────────
+   Tell the browser to promote elements that animate opacity/transform onto
+   their own compositor layer BEFORE animation starts, avoiding jank caused
+   by late promotion during scroll.                                           */
+[data-animate],
+.motion-safe\:animate {
+  will-change: transform, opacity;
+}
+
+/* ─── Framer Motion element hint ────────────────────────────────────────────
+   motion.div elements rendered by framer-motion get a data attribute we can
+   target. Since we can't add data attrs directly, we use a class instead.
+   Apply `translate-z-0` utility to motion wrappers for cheap GPU layer.     */
+.translate-z-0 {
+  transform: translateZ(0);
 }
 
 .material-symbols-outlined {
