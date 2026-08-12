@@ -3,6 +3,7 @@ import { User } from '../../types/auth';
 import { ApplicationStatus } from '../../types/internship';
 import { PendaftarReviewDashboard } from './PendaftarReviewDashboard';
 import { PendaftarAcceptedDashboard } from './PendaftarAcceptedDashboard';
+import { SimulatorSwitcherBar, ApplicantStatus } from '../../components/pendaftar/layout/SimulatorSwitcherBar';
 
 interface PendaftarDashboardSwitcherProps {
   user: User;
@@ -18,43 +19,11 @@ export function PendaftarDashboardSwitcher({
   onLogout,
 }: PendaftarDashboardSwitcherProps) {
   // State for applicant status: 'review' (Pendaftaran Sedang Ditinjau) vs 'accepted' (Sudah Diterima & Aktif Magang)
-  const [applicantStatus, setApplicantStatus] = useState<'review' | 'accepted'>('review');
+  const [applicantStatus, setApplicantStatus] = useState<ApplicantStatus>('review');
 
   return (
     <div className="relative">
-      {/* Top Floating Simulator Switcher Bar so user can toggle between Review and Accepted Layouts */}
-      <div className="bg-slate-900 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md border-b border-slate-700 sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-amber-400 text-base">tune</span>
-          <span>Simulasi Status Pendaftar:</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setApplicantStatus('review')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              applicantStatus === 'review'
-                ? 'bg-amber-400 text-slate-950 shadow-xs'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            1. Dalam Peninjauan (Belum Diterima)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setApplicantStatus('accepted')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              applicantStatus === 'accepted'
-                ? 'bg-[#10B981] text-white shadow-xs'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            2. Sudah Diterima (Aktif Magang)
-          </button>
-        </div>
-      </div>
+      <SimulatorSwitcherBar status={applicantStatus} onChangeStatus={setApplicantStatus} />
 
       {applicantStatus === 'review' ? (
         <PendaftarReviewDashboard
