@@ -17,6 +17,23 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            // Role & profil SI AMANG
+            // 'alumni' = pernah diterima magang & sudah selesai, boleh daftar periode baru lagi.
+            // Disinkronkan otomatis oleh ApplicationObserver & BimbinganObserver
+            $table->enum('role', ['applicant', 'intern', 'admin', 'mentor', 'alumni'])->default('applicant');
+            $table->string('nim', 50)->nullable();          // NIM mahasiswa/siswa
+            $table->string('institution')->nullable();       // Asal kampus/sekolah
+            $table->string('major')->nullable();              // Jurusan
+            $table->string('phone', 20)->nullable();          // Nomor HP
+            $table->text('address')->nullable();               // Alamat lengkap
+            $table->string('avatar_url', 500)->nullable();    // URL foto profil
+            $table->string('semester', 10)->nullable();       // Semester aktif
+            $table->decimal('ipk', 3, 2)->nullable();          // IPK
+            $table->text('skills')->nullable();                 // Keahlian
+            $table->text('tools')->nullable();                  // Tools yang dikuasai
+            $table->string('nip', 30)->nullable();             // NIP (mentor/pegawai)
+
             $table->rememberToken();
             $table->timestamps();
         });
