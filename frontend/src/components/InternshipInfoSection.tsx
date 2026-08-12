@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus } from '../types/internship';
 import { TimelineCard } from './TimelineCard';
 import { NoticeBar } from './NoticeBar';
@@ -12,7 +12,66 @@ interface InternshipInfoSectionProps {
   onNavigateRegister?: () => void;
 }
 
-export function InternshipInfoSection({
+// Static data defined outside component to avoid re-creation on every render
+const CUSTOM_BIDANG_LIST = [
+  {
+    id: 'dev1',
+    categoryName: 'Bidang Sistem Informasi dan Statistik',
+    title: 'Pengembangan Perangkat Lunak',
+    badge: 'SIM CUTI',
+    description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
+    slotText: '2 Mahasiswa',
+    icon: 'code'
+  },
+  {
+    id: 'dev2',
+    categoryName: 'Bidang Sistem Informasi dan Statistik',
+    title: 'Pengembangan Perangkat Lunak',
+    badge: 'SIM CUTI',
+    description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
+    slotText: '2 Mahasiswa',
+    icon: 'code'
+  },
+  {
+    id: 'dev3',
+    categoryName: 'Bidang Sistem Informasi dan Statistik',
+    title: 'Pengembangan Perangkat Lunak',
+    badge: 'SIM CUTI',
+    description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
+    slotText: '2 Mahasiswa',
+    icon: 'code'
+  }
+];
+
+const CUSTOM_REQUIREMENTS_LIST = [
+  {
+    id: 'req1',
+    icon: 'school',
+    title: 'Pendidikan',
+    description: 'Minimal mahasiswa semester 5 (D3) / semester 7 (S1).'
+  },
+  {
+    id: 'req2',
+    icon: 'article',
+    title: 'Surat Permohonan Magang & NDA',
+    description: 'Mahasiswa wajib memiliki surat permohonan magang dari kampus dan NDA perjanjian magang DISKOMINFOSAN yang dapat di download',
+    hasDownloadLink: true
+  },
+  {
+    id: 'req3',
+    icon: 'account_circle',
+    title: 'Pas Foto',
+    description: 'Mahasiswa wajib memiliki pas foto ukuran 3 × 4.'
+  },
+  {
+    id: 'req4',
+    icon: 'play_circle',
+    title: 'Video Perkenalan',
+    description: 'Mahasiswa wajib membuat video perkenalan dengan durasi maksimal 2 menit dan ukuran 20MB.'
+  }
+];
+
+export const InternshipInfoSection = memo(function InternshipInfoSection({
   schedules,
   onApplyCategory,
   onNavigateRegister,
@@ -23,65 +82,9 @@ export function InternshipInfoSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDemoStatus, setSelectedDemoStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
 
-  // Custom sample categories matching Image 1
-  const customBidangList = [
-    {
-      id: 'dev1',
-      categoryName: 'Bidang Sistem Informasi dan Statistik',
-      title: 'Pengembangan Perangkat Lunak',
-      badge: 'SIM CUTI',
-      description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
-      slotText: '2 Mahasiswa',
-      icon: 'code'
-    },
-    {
-      id: 'dev2',
-      categoryName: 'Bidang Sistem Informasi dan Statistik',
-      title: 'Pengembangan Perangkat Lunak',
-      badge: 'SIM CUTI',
-      description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
-      slotText: '2 Mahasiswa',
-      icon: 'code'
-    },
-    {
-      id: 'dev3',
-      categoryName: 'Bidang Sistem Informasi dan Statistik',
-      title: 'Pengembangan Perangkat Lunak',
-      badge: 'SIM CUTI',
-      description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
-      slotText: '2 Mahasiswa',
-      icon: 'code'
-    }
-  ];
-
-  // Custom sample requirements matching Image 2
-  const customRequirementsList = [
-    {
-      id: 'req1',
-      icon: 'school',
-      title: 'Pendidikan',
-      description: 'Minimal mahasiswa semester 5 (D3) / semester 7 (S1).'
-    },
-    {
-      id: 'req2',
-      icon: 'article',
-      title: 'Surat Permohonan Magang & NDA',
-      description: 'Mahasiswa wajib memiliki surat permohonan magang dari kampus dan NDA perjanjian magang DISKOMINFOSAN yang dapat di download',
-      hasDownloadLink: true
-    },
-    {
-      id: 'req3',
-      icon: 'account_circle',
-      title: 'Pas Foto',
-      description: 'Mahasiswa wajib memiliki pas foto ukuran 3 × 4.'
-    },
-    {
-      id: 'req4',
-      icon: 'play_circle',
-      title: 'Video Perkenalan',
-      description: 'Mahasiswa wajib membuat video perkenalan dengan durasi maksimal 2 menit dan ukuran 20MB.'
-    }
-  ];
+  // Use module-level constants instead of re-creating on each render
+  const customBidangList = CUSTOM_BIDANG_LIST;
+  const customRequirementsList = CUSTOM_REQUIREMENTS_LIST;
 
   return (
     <section className="bg-slate-50/70 py-8 md:py-12">
@@ -175,7 +178,7 @@ export function InternshipInfoSection({
 
           {/* TAB 2: BIDANG TERSEDIA (Image 1) */}
           {activeTab === 'bidang' && (
-            <div className="space-y-8 animate-in fade-in">
+            <div className="space-y-8">
               {/* Section Header */}
               <div className="flex items-start gap-3">
                 <div className="text-[#1f877c] mt-0.5">
@@ -266,7 +269,7 @@ export function InternshipInfoSection({
 
           {/* TAB 3: PERSYARATAN (Image 2) */}
           {activeTab === 'persyaratan' && (
-            <div className="space-y-8 animate-in fade-in">
+            <div className="space-y-8">
               {/* Section Header */}
               <div className="flex items-start gap-3">
                 <div className="text-[#1f877c] mt-0.5">
@@ -324,7 +327,7 @@ export function InternshipInfoSection({
 
           {/* TAB 4: STATUS PENDAFTARAN (Image 3, 4, 5, 6) */}
           {activeTab === 'status' && (
-            <div className="space-y-8 animate-in fade-in">
+            <div className="space-y-8">
               {/* Section Header */}
               <div className="flex items-start gap-3">
                 <div className="text-[#1f877c] mt-0.5">
@@ -442,7 +445,7 @@ export function InternshipInfoSection({
 
               {/* STATE 1: PENDING ADMINISTRASI (Image 4) */}
               {selectedDemoStatus === 'pending' && (
-                <div className="space-y-6 animate-in fade-in">
+                <div className="space-y-6">
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Applicant Info */}
                     <div className="lg:col-span-5 space-y-5">
@@ -451,6 +454,8 @@ export function InternshipInfoSection({
                           src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
                           alt="LEONA STRIVE"
                           className="w-20 h-20 rounded-full object-cover border-2 border-slate-200 shadow-2xs"
+                          loading="lazy"
+                          decoding="async"
                         />
                         <div>
                           <h4 className="text-lg font-extrabold text-[#1e293b]">LEONA STRIVE</h4>
@@ -595,7 +600,7 @@ export function InternshipInfoSection({
 
               {/* STATE 2: DITERIMA (Image 5) */}
               {selectedDemoStatus === 'accepted' && (
-                <div className="space-y-6 animate-in fade-in">
+                <div className="space-y-6">
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Applicant Info */}
                     <div className="lg:col-span-5 space-y-5">
@@ -790,7 +795,7 @@ export function InternshipInfoSection({
 
               {/* STATE 3: TIDAK DITERIMA / DITOLAK (Image 6) */}
               {selectedDemoStatus === 'rejected' && (
-                <div className="space-y-6 animate-in fade-in">
+                <div className="space-y-6">
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Applicant Info */}
                     <div className="lg:col-span-5 space-y-5">
@@ -927,4 +932,4 @@ export function InternshipInfoSection({
       </div>
     </section>
   );
-}
+});

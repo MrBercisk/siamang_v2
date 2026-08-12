@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion } from 'motion/react';
 import { InternshipCategory } from '../types/internship';
 
@@ -6,15 +7,17 @@ interface CategoriesSectionProps {
   onSelectCategory?: (category: InternshipCategory) => void;
 }
 
-export function CategoriesSection({ categories, onSelectCategory }: CategoriesSectionProps) {
+// Memoize so it only re-renders when props actually change
+export const CategoriesSection = memo(function CategoriesSection({ categories, onSelectCategory }: CategoriesSectionProps) {
   return (
     <section className="py-16 md:py-24 bg-[#f7f9fb] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
         className="text-center mb-12"
+        style={{ willChange: 'opacity, transform' }}
       >
         <h2 className="text-2xl md:text-3xl font-bold text-[#005c55] mb-2">
           Bidang dan Kategori
@@ -26,19 +29,26 @@ export function CategoriesSection({ categories, onSelectCategory }: CategoriesSe
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {categories.map((cat, idx) => (
-          <motion.div 
+          <motion.div
             key={cat.id}
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.5, delay: idx * 0.1, ease: "easeOut" }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.45, delay: Math.min(idx * 0.08, 0.24), ease: 'easeOut' }}
             onClick={() => onSelectCategory && onSelectCategory(cat)}
             className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 flex items-start space-x-4 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
+            style={{ willChange: 'opacity, transform' }}
           >
             {/* Avatar / Icon */}
             <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 flex items-center justify-center border border-slate-200 group-hover:border-[#005c55]/30 transition-colors">
               {cat.avatarUrl ? (
-                <img src={cat.avatarUrl} alt={cat.title} className="w-8 h-8 object-contain" />
+                <img
+                  src={cat.avatarUrl}
+                  alt={cat.title}
+                  className="w-8 h-8 object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <span className="material-symbols-outlined text-[#005c55] text-2xl">
                   {cat.icon || 'work'}
@@ -67,5 +77,4 @@ export function CategoriesSection({ categories, onSelectCategory }: CategoriesSe
       </div>
     </section>
   );
-}
-
+});
