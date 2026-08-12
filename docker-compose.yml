@@ -1,0 +1,70 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: siamang-backend-app
+    restart: unless-stopped
+    ports:
+      - "8001:80"
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - siamang-network
+    depends_on:
+      - mysql
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: siamang-frontend-app
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - siamang-network
+    depends_on:
+      - backend
+
+  mysql:
+    image: mysql:8.0
+    container_name: siamang-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: siamang_db
+      MYSQL_USER: siamang_user
+      MYSQL_PASSWORD: siamang_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3308:3306"
+    volumes:
+      - siamang-mysql-data:/var/lib/mysql
+    networks:
+      - siamang-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: siamang-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root_pass
+    ports:
+      - "8081:80"
+    networks:
+      - siamang-network
+    depends_on:
+      - mysql
+
+networks:
+  siamang-network:
+    driver: bridge
+
+volumes:
+  siamang-mysql-data:
+    driver: local
