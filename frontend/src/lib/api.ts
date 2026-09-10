@@ -17,6 +17,25 @@ export function setStoredToken(token: string | null) {
   }
 }
 
+export class ApiError extends Error {
+  status?: number;
+  errors?: Record<string, string[]>;
+  isNetworkError: boolean;
+
+  constructor(
+    message: string,
+    status?: number,
+    errors?: Record<string, string[]>,
+    isNetworkError = false
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.errors = errors;
+    this.isNetworkError = isNetworkError;
+  }
+}
+
 interface RequestOptions extends RequestInit {
   data?: unknown;
 }
@@ -53,14 +72,37 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      
+      // Build human-friendly message from Laravel error bag if available
+      let detailedMessage = errorData.message;
+      if (errorData.errors && typeof errorData.errors === 'object') {
+        const firstField = Object.keys(errorData.errors)[0];
+        if (firstField && Array.isArray(errorData.errors[firstField]) && errorData.errors[firstField].length > 0) {
+          detailedMessage = errorData.errors[firstField][0];
+        }
+      }
+
+      throw new ApiError(
+        detailedMessage || `Permintaan gagal dengan status ${response.status}`,
+        response.status,
+        errorData.errors,
+        false
+      );
     }
 
     return await response.json();
   } catch (err) {
-    // Graceful fallback logging for standalone preview mode when Laravel API server is not running
-    console.warn(`[SI AMANG API] Network request to ${url} failed. Using offline fallback data if applicable.`, err);
-    throw err;
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    // Network / offline error
+    console.warn(`[SI AMANG API] Network connection failed for ${url}:`, err);
+    throw new ApiError(
+      'Tidak dapat terhubung ke server backend (Network/Offline error).',
+      undefined,
+      undefined,
+      true
+    );
   }
 }
 

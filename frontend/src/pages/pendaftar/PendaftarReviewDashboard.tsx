@@ -14,14 +14,13 @@ interface PendaftarReviewDashboardProps {
   applications: ApplicationStatus[];
   onNavigate: (page: 'home' | 'info' | 'register' | 'login' | 'dashboard') => void;
   onLogout?: () => void;
-  onSwitchToAccepted?: () => void;
 }
 
 export function PendaftarReviewDashboard({
   user,
+  applications = [],
   onNavigate,
   onLogout,
-  onSwitchToAccepted,
 }: PendaftarReviewDashboardProps) {
   const [activeTab, setActiveTab] = useState<ReviewTab>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -38,7 +37,6 @@ export function PendaftarReviewDashboard({
         onGoToProfile={() => setActiveTab('profile')}
         onNavigateHome={() => onNavigate('home')}
         onLogout={handleLogout}
-        onSwitchToAccepted={onSwitchToAccepted}
       />
 
       <div className="flex-1 flex relative">
@@ -52,10 +50,21 @@ export function PendaftarReviewDashboard({
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden">
           {activeTab === 'dashboard' && (
-            <ReviewDashboardTab user={user} onSwitchToAccepted={onSwitchToAccepted} />
+            <ReviewDashboardTab
+              user={user}
+              applications={applications}
+              onGoToPendaftaran={() => setActiveTab('pendaftaran')}
+            />
           )}
-          {activeTab === 'pendaftaran' && <PendaftaranFormView user={user} />}
-          {activeTab === 'riwayat' && <RiwayatMagangView />}
+          {activeTab === 'pendaftaran' && (
+            <PendaftaranFormView
+              user={user}
+              onSuccessSubmit={() => setActiveTab('dashboard')}
+            />
+          )}
+          {activeTab === 'riwayat' && (
+            <RiwayatMagangView applications={applications} />
+          )}
           {activeTab === 'profile' && <ProfileView user={user} />}
         </main>
       </div>

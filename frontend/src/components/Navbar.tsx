@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { User } from '../types/auth';
+import { PageType } from '../types/navigation';
 
-interface NavbarProps {
-  currentPage: 'home' | 'info' | 'register' | 'login' | 'dashboard';
-  onNavigate: (page: 'home' | 'info' | 'register' | 'login' | 'dashboard') => void;
+export interface NavbarProps {
+  currentPage: PageType | string;
+  onNavigate: (page: PageType) => void;
   user: User | null;
   onLogout: () => void;
 }

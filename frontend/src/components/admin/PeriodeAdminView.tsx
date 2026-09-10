@@ -167,12 +167,13 @@ export const PeriodeAdminView: React.FC = () => {
 
   // Delete Lowongan
   const handleDeleteLowongan = async (item: LowonganItem) => {
-    const confirm = await showConfirmAlert(
-      'Hapus Lowongan Magang?',
-      `Apakah Anda yakin ingin menghapus lowongan project "${item.project}" (${item.kategori})?`
-    );
+    const confirm = await showConfirmAlert({
+      title: 'Hapus Lowongan Magang?',
+      text: `Apakah Anda yakin ingin menghapus lowongan project "${item.project}" (${item.kategori})?`,
+      confirmButtonText: 'Ya, Hapus',
+    });
 
-    if (confirm.isConfirmed) {
+    if (confirm) {
       setLowonganList((prev) => prev.filter((l) => l.id !== item.id));
       showSuccessAlert('Lowongan Dihapus', `Lowongan project "${item.project}" telah dihapus.`);
     }

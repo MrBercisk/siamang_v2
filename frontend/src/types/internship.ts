@@ -40,9 +40,36 @@ export interface ApplicationStatus {
   applicantName: string;
   institution: string;
   major: string;
+  nim?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  projectTitle?: string;
+  skills?: string;
+  tools?: string;
+  startDate?: string;
+  endDate?: string;
   fieldId: string;
   fieldName: string;
+  kategoriName?: string;
+  registrationType?: 'Individu' | 'Kelompok';
+  teamMembers?: Array<{
+    id: number;
+    fullName: string;
+    email: string;
+    phone: string;
+    nim: string;
+  }>;
+  documents?: Array<{
+    id: number;
+    name: string;
+    fileName?: string;
+    status: string;
+  }>;
   status: 'pending' | 'reviewing' | 'accepted' | 'rejected';
   submittedAt: string;
   notes?: string;
+  periode?: string;
+  periodeStart?: string;
+  periodeEnd?: string;
 }

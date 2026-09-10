@@ -6,7 +6,6 @@ interface ReviewHeaderProps {
   onGoToProfile: () => void;
   onNavigateHome: () => void;
   onLogout: () => void;
-  onSwitchToAccepted?: () => void;
 }
 
 export function ReviewHeader({
@@ -14,7 +13,6 @@ export function ReviewHeader({
   onGoToProfile,
   onNavigateHome,
   onLogout,
-  onSwitchToAccepted,
 }: ReviewHeaderProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -27,14 +25,10 @@ export function ReviewHeader({
     <header className="bg-white border-b border-slate-200/90 sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 shrink-0 shadow-2xs">
-          <img
+         <img
             src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Logo_Kota_Yogyakarta.png"
             alt="Logo Kota Yogyakarta"
             className="w-full h-full object-contain"
-            onError={(e) => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = 'https://illustrations.popsy.co/emerald/shield.svg';
-            }}
           />
         </div>
         <div>
@@ -50,19 +44,6 @@ export function ReviewHeader({
       </div>
 
       <div className="flex items-center gap-3 sm:gap-5">
-        {/* Status Switcher Tool */}
-        {onSwitchToAccepted && (
-          <button
-            type="button"
-            onClick={onSwitchToAccepted}
-            className="hidden sm:flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#1f877c] text-xs font-extrabold px-3 py-1.5 rounded-xl border border-emerald-200 transition-all cursor-pointer"
-            title="Klik untuk simulasi tampilan peserta yang sudah DITERIMA"
-          >
-            <span className="material-symbols-outlined text-base">swap_horiz</span>
-            <span>Lihat Status: Diterima Magang</span>
-          </button>
-        )}
-
         {/* Notification Icon */}
         <div className="relative">
           <button

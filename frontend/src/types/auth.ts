@@ -6,7 +6,7 @@ export interface User {
   institution?: string;
   major?: string;
   phone?: string;
-  role: 'applicant' | 'intern' | 'admin' | 'mentor';
+  role: 'applicant' | 'intern' | 'admin' | 'mentor' | 'alumni';
   avatar_url?: string;
   created_at?: string;
 }
@@ -34,8 +34,14 @@ export interface RegisterCredentials {
 }
 
 export interface AuthResponse {
-  message: string;
-  access_token: string;
-  token_type: string;
-  user: User;
+  message?: string;
+  token?: string;
+  access_token?: string;
+  token_type?: string;
+  user?: User;
+  data?: {
+    user?: User;
+    token?: string;
+    access_token?: string;
+  };
 }

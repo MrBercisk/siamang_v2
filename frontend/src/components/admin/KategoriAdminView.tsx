@@ -170,12 +170,13 @@ export const KategoriAdminView: React.FC = () => {
 
   // Delete Kategori
   const handleDeleteKategori = async (item: KategoriItem) => {
-    const confirm = await showConfirmAlert(
-      'Hapus Kategori Magang?',
-      `Apakah Anda yakin ingin menghapus kategori "${item.name}"? Data pendaftar yang memilih kategori ini akan tetap tersimpan.`
-    );
+    const confirm = await showConfirmAlert({
+      title: 'Hapus Kategori Magang?',
+      text: `Apakah Anda yakin ingin menghapus kategori "${item.name}"? Data pendaftar yang memilih kategori ini akan tetap tersimpan.`,
+      confirmButtonText: 'Ya, Hapus',
+    });
 
-    if (confirm.isConfirmed) {
+    if (confirm) {
       setKategoriList((prev) => prev.filter((k) => k.id !== item.id));
       showSuccessAlert('Kategori Dihapus', `Kategori "${item.name}" telah dihapus dari sistem.`);
     }

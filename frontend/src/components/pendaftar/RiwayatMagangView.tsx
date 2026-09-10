@@ -1,30 +1,33 @@
 import { useState } from 'react';
+import { ApplicationStatus } from '../../types/internship';
 
 interface RiwayatItem {
-  id: number;
+  id: number | string;
+  regId?: string;
   periode: string;
   tanggalDaftar: string;
   bidang: string;
   status: 'Diterima' | 'Tidak Diterima' | 'Sedang Ditinjau';
 }
 
-export function RiwayatMagangView() {
-  const [riwayatList] = useState<RiwayatItem[]>([
-    {
-      id: 1,
-      periode: 'Juli - Desember 2026',
-      tanggalDaftar: '28 Mei 2026',
-      bidang: 'Pengembangan Sistem Informasi',
-      status: 'Diterima',
-    },
-    {
-      id: 2,
-      periode: 'Januari - Juli 2025',
-      tanggalDaftar: 'Desember 2024',
-      bidang: 'Desain Komunikasi Visual',
-      status: 'Tidak Diterima',
-    },
-  ]);
+interface RiwayatMagangViewProps {
+  applications?: ApplicationStatus[];
+}
+
+export function RiwayatMagangView({ applications = [] }: RiwayatMagangViewProps) {
+  const riwayatList: RiwayatItem[] = applications.map((app, idx) => ({
+          id: app.id || idx + 1,
+          regId: app.id,
+          periode: app.periode || ([app.periodeStart, app.periodeEnd].filter(Boolean).join(' - ') || '-'),
+          tanggalDaftar: app.submittedAt,
+          bidang: app.fieldName || '-',
+          status:
+            app.status === 'accepted'
+              ? 'Diterima'
+              : app.status === 'rejected'
+              ? 'Tidak Diterima'
+              : 'Sedang Ditinjau',
+        }));
 
   const totalDiterima = riwayatList.filter((r) => r.status === 'Diterima').length;
   const totalTidakDiterima = riwayatList.filter((r) => r.status === 'Tidak Diterima').length;
@@ -54,7 +57,7 @@ export function RiwayatMagangView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-700">
-                  {riwayatList.map((item) => (
+                  {riwayatList.length > 0 ? riwayatList.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="py-4 px-2 font-medium text-slate-800">{item.periode}</td>
                       <td className="py-4 px-2 text-slate-600">{item.tanggalDaftar}</td>
@@ -75,7 +78,13 @@ export function RiwayatMagangView() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan={4} className="py-8 text-center text-slate-400">
+                        Belum ada riwayat pendaftaran dari API.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

@@ -17,7 +17,7 @@ class BidangController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Bidang::query()->withCount('kategoris');
+        $query = Bidang::query()->withCount('kategori');
 
         if (! $request->boolean('all')) {
             $query->where('status', 'Aktif');
@@ -31,7 +31,7 @@ class BidangController extends Controller
     public function show(Bidang $bidang): JsonResponse
     {
         return response()->json([
-            'data' => $bidang->load('kategoris'),
+            'data' => $bidang->load('kategori'),
         ]);
     }
 
@@ -41,7 +41,7 @@ class BidangController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:bidangs,name'],
+            'name' => ['required', 'string', 'max:255', 'unique:bidang,name'],
             'status' => ['nullable', Rule::in(['Aktif', 'Nonaktif'])],
         ]);
 
@@ -56,7 +56,7 @@ class BidangController extends Controller
     public function update(Request $request, Bidang $bidang): JsonResponse
     {
         $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:255', Rule::unique('bidangs', 'name')->ignore($bidang->id)],
+            'name' => ['sometimes', 'string', 'max:255', Rule::unique('bidang', 'name')->ignore($bidang->id)],
             'status' => ['sometimes', Rule::in(['Aktif', 'Nonaktif'])],
         ]);
 
@@ -72,7 +72,7 @@ class BidangController extends Controller
     {
         // Cegah hapus bidang yang masih punya kategori aktif di bawahnya,
         // supaya tidak meninggalkan kategori/lowongan/application yatim.
-        if ($bidang->kategoris()->exists()) {
+        if ($bidang->kategori()->exists()) {
             return response()->json([
                 'message' => 'Bidang ini masih punya kategori terkait, hapus/pindahkan kategorinya dulu.',
             ], 422);

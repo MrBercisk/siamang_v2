@@ -15,14 +15,13 @@ import { DashboardPage } from './pages/DashboardPage';
 
 import { useAuth } from './hooks/useAuth';
 import { useInternshipData } from './hooks/useInternshipData';
-
-type PageType = 'home' | 'info' | 'register' | 'login' | 'dashboard' | 'forgot-password' | 'reset-password';
+import { PageType } from './types/navigation';
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   
-  const { user, isLoading: authLoading, login, register, logout } = useAuth();
-  const { categories, schedules, requirements, applications, submitApplication } = useInternshipData();
+  const { user, isLoading: authLoading, error: authError, login, register, logout } = useAuth();
+  const { categories, schedules, requirements, applications, submitApplication } = useInternshipData(Boolean(user));
 
   const handleNavigate = (page: PageType) => {
     setCurrentPage(page);
@@ -112,6 +111,7 @@ export function App() {
             onNavigateLogin={() => handleNavigate('login')}
             onNavigateHome={() => handleNavigate('home')}
             isLoading={authLoading}
+            authError={authError}
           />
         )}
 
@@ -122,6 +122,7 @@ export function App() {
             onNavigateForgotPassword={() => handleNavigate('forgot-password')}
             onNavigateHome={() => handleNavigate('home')}
             isLoading={authLoading}
+            authError={authError}
           />
         )}
 
