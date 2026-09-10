@@ -213,38 +213,7 @@ export function useInternshipData(isAuthenticated = false) {
     fetchBackendData();
   }, [fetchBackendData]);
 
-  const submitApplication = async (data: {
-    fieldId: string;
-    fieldName: string;
-    applicantName: string;
-    institution: string;
-    major: string;
-    nim?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    projectTitle?: string;
-    skills?: string;
-    tools?: string;
-    startDate?: string;
-    endDate?: string;
-    kategoriName?: string;
-    registrationType?: 'Individu' | 'Kelompok';
-    teamMembers?: Array<{
-      id: number;
-      fullName: string;
-      email: string;
-      phone: string;
-      nim: string;
-    }>;
-    documents?: Array<{
-      id: number;
-      name: string;
-      fileName?: string;
-      status: string;
-    }>;
-    notes?: string;
-  }) => {
+  const submitApplication = async (data: FormData | Record<string, unknown>) => {
     setLoading(true);
     try {
       const response = await apiRequest<ApiItem<BackendApplication>>('/applications', {

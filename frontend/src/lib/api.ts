@@ -42,9 +42,14 @@ interface RequestOptions extends RequestInit {
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = getStoredToken();
+  const isFormData = options.data instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'Accept': 'application/json',
+    // Jangan set Content-Type manual untuk FormData — browser yang menentukan
+    // boundary multipart secara otomatis. Kalau dipaksa 'application/json',
+    // file di dalam FormData tidak akan terkirim dengan benar.
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string> || {}),
   };
 
@@ -58,7 +63,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   };
 
   if (options.data) {
-    config.body = JSON.stringify(options.data);
+    config.body = isFormData ? (options.data as FormData) : JSON.stringify(options.data);
   }
 
   const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
@@ -72,7 +77,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      
+
       // Build human-friendly message from Laravel error bag if available
       let detailedMessage = errorData.message;
       if (errorData.errors && typeof errorData.errors === 'object') {

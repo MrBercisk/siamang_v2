@@ -34,6 +34,7 @@ export interface DocumentFile {
   required: boolean;
   format: string;
   maxSize: string;
+  file?: File;
   fileName?: string;
   status: 'Berhasil Upload' | 'Belum Upload Berkas';
 }

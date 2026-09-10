@@ -7,9 +7,10 @@ interface StepBiodataProps {
   setBiodata: (biodata: BiodataState) => void;
   onPhotoUpload: (e: ChangeEvent<HTMLInputElement>) => void;
   onNext: () => void;
+  lastSavedAt: string | null;
 }
 
-export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext }: StepBiodataProps) {
+export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSavedAt }: StepBiodataProps) {
   const handleNext = () => {
     // Hanya field yang ditandai wajib (*) di UI yang divalidasi
     const requiredFields: { key: keyof BiodataState; label: string }[] = [
@@ -75,6 +76,22 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext }: Step
   };
 
   const todayString = new Date().toISOString().split('T')[0];
+
+   const formatSavedAt = (iso: string | null) => {
+    if (!iso) return 'Belum ada draft tersimpan';
+    const date = new Date(iso);
+    const formatted = new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Jakarta',
+    }).format(date);
+    return `${formatted} WIB`;
+  };
+  const savedAtText = formatSavedAt(lastSavedAt);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-8 shadow-2xs space-y-8">
@@ -284,8 +301,12 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext }: Step
         <div className="flex items-center gap-2 text-xs font-bold text-[#1f877c]">
           <span className="material-symbols-outlined text-lg">check_circle</span>
           <div>
-            <span className="block font-bold text-slate-900">Draft tersimpan otomatis</span>
-            <span className="text-[11px] font-medium text-slate-500">Terakhir disimpan 05 Mei 2025, 19:00 WIB</span>
+            <span className="block font-bold text-slate-900">
+              {savedAtText ? 'Draft tersimpan otomatis' : 'Draft belum tersimpan'}
+            </span>
+            <span className="text-[11px] font-medium text-slate-500">
+              {savedAtText ? `Terakhir disimpan ${savedAtText}` : 'Data akan tersimpan otomatis saat Anda mengisi form'}
+            </span>
           </div>
         </div>
 

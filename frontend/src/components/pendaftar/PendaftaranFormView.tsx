@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { User } from '../../types/auth';
 import { ApplicationStatus } from '../../types/internship';
 import { useInternshipData } from '../../hooks/useInternshipData';
@@ -24,24 +24,31 @@ interface PendaftaranFormViewProps {
   onSuccessSubmit?: (application?: ApplicationStatus) => void;
 }
 
-export function PendaftaranFormView({
-  user,
-  onSubmitApplication,
-  onSuccessSubmit,
-}: PendaftaranFormViewProps) {
-  const {
-    bidangs,
-    kategoriByBidang,
-    submitApplication: internalSubmitApplication,
-  } = useInternshipData();
-  const [submittedApp, setSubmittedApp] = useState<ApplicationStatus | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+const DRAFT_KEY = 'si_amang_pendaftaran_draft';
 
-  // Current Step: 1 = Biodata, 2 = Tipe Pendaftaran, 3 = Bidang & Kategori, 4 = Berkas, 5 = Review & Submit
-  const [currentStep, setCurrentStep] = useState<number>(1);
+interface DraftState {
+  currentStep: number;
+  biodata: BiodataState;
+  registrationType: RegistrationType;
+  teamMembers: TeamMember[];
+  selectedBidang: string;
+  selectedKategori: string;
+  isDeclared: boolean;
+  savedAt: string;
+}
 
-  // Step 1: Biodata State
-  const [biodata, setBiodata] = useState<BiodataState>({
+function loadDraft(): DraftState | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as DraftState;
+  } catch {
+    return null;
+  }
+}
+
+function getDefaultBiodata(user: User): BiodataState {
+  return {
     photoUrl: '',
     fullName: user.name || 'Leona Strive',
     email: user.email || 'leona@gmail.com',
@@ -56,19 +63,49 @@ export function PendaftaranFormView({
     tools: '',
     startDate: '',
     endDate: '',
-  });
+  };
+}
+
+export function PendaftaranFormView({
+  user,
+  onSubmitApplication,
+  onSuccessSubmit,
+}: PendaftaranFormViewProps) {
+  const {
+    bidangs,
+    kategoriByBidang,
+    submitApplication: internalSubmitApplication,
+  } = useInternshipData();
+  const [submittedApp, setSubmittedApp] = useState<ApplicationStatus | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Muat draft yang tersimpan (kalau ada) sekali saat komponen pertama kali dirender
+  const [initialDraft] = useState<DraftState | null>(() => loadDraft());
+
+  // Current Step: 1 = Biodata, 2 = Tipe Pendaftaran, 3 = Bidang & Kategori, 4 = Berkas, 5 = Review & Submit
+  const [currentStep, setCurrentStep] = useState<number>(initialDraft?.currentStep ?? 1);
+
+  // Step 1: Biodata State
+  const [biodata, setBiodata] = useState<BiodataState>(
+    initialDraft?.biodata ?? getDefaultBiodata(user)
+  );
 
   // Step 2: Tipe Pendaftaran State
-  const [registrationType, setRegistrationType] = useState<RegistrationType>('Kelompok');
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    { id: 2, fullName: 'Sara', email: 'sara@gmail.com', phone: '08xxxxxxxxxx', nim: '12345679' },
-  ]);
+  const [registrationType, setRegistrationType] = useState<RegistrationType>(
+    initialDraft?.registrationType ?? 'Kelompok'
+  );
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(
+    initialDraft?.teamMembers ?? [
+      { id: 2, fullName: 'Sara', email: 'sara@gmail.com', phone: '08xxxxxxxxxx', nim: '12345679' },
+    ]
+  );
 
   // Step 3: Bidang & Kategori State
-  const [selectedBidang, setSelectedBidang] = useState<string>('');
-  const [selectedKategori, setSelectedKategori] = useState<string>('');
+  const [selectedBidang, setSelectedBidang] = useState<string>(initialDraft?.selectedBidang ?? '');
+  const [selectedKategori, setSelectedKategori] = useState<string>(initialDraft?.selectedKategori ?? '');
 
-  // Step 4: Berkas State
+  // Step 4: Berkas State — TIDAK dipulihkan dari draft, karena File tidak bisa disimpan di localStorage.
+  // User perlu mengunggah ulang berkas setelah refresh halaman.
   const [documents, setDocuments] = useState<DocumentFile[]>([
     {
       id: 1,
@@ -121,9 +158,41 @@ export function PendaftaranFormView({
       status: 'Belum Upload Berkas',
     },
   ]);
+
   // Step 5: Pernyataan Checkbox
-  const [isDeclared, setIsDeclared] = useState(false);
+  const [isDeclared, setIsDeclared] = useState(initialDraft?.isDeclared ?? false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialDraft?.savedAt ?? null);
+
+  // Simpan draft otomatis setiap kali data berubah (kecuali dokumen — lihat catatan di atas)
+  useEffect(() => {
+    if (isSubmitted) return; // jangan simpan draft lagi setelah berhasil submit
+
+    const timeout = setTimeout(() => {
+      const draft: DraftState = {
+        currentStep,
+        biodata,
+        registrationType,
+        teamMembers,
+        selectedBidang,
+        selectedKategori,
+        isDeclared,
+        savedAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        setLastSavedAt(draft.savedAt);
+      } catch {
+        // localStorage penuh/diblokir — abaikan secara diam-diam, tidak kritikal
+      }
+    }, 500); // debounce ringan supaya tidak menulis di setiap ketikan
+
+    return () => clearTimeout(timeout);
+  }, [currentStep, biodata, registrationType, teamMembers, selectedBidang, selectedKategori, isDeclared, isSubmitted]);
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+  };
 
   // Cari nama asli Bidang & Kategori dari ID terpilih, untuk ditampilkan/payload
   const selectedBidangName = bidangs.find((b) => b.id === selectedBidang)?.name || '';
@@ -177,9 +246,11 @@ export function PendaftaranFormView({
     const file = e.target.files?.[0];
     if (file) {
       setDocuments(
-        documents.map((d) => (d.id === docId ? { ...d, fileName: file.name, status: 'Berhasil Upload' } : d))
+        documents.map((d) =>
+          d.id === docId ? { ...d, file, fileName: file.name, status: 'Berhasil Upload' } : d
+        )
       );
-      showToast('success', `Berkas ${file.name} berhasil diunggah!`);
+      showToast('success', `Berkas ${file.name} siap dikirim saat submit`);
     }
   };
 
@@ -193,7 +264,9 @@ export function PendaftaranFormView({
 
     if (confirmed) {
       setDocuments(
-        documents.map((d) => (d.id === docId ? { ...d, fileName: undefined, status: 'Belum Upload Berkas' } : d))
+        documents.map((d) =>
+          d.id === docId ? { ...d, file: undefined, fileName: undefined, status: 'Belum Upload Berkas' } : d
+        )
       );
       showToast('info', 'Berkas berhasil dihapus');
     }
@@ -218,51 +291,60 @@ export function PendaftaranFormView({
       icon: 'question',
     });
 
-    if (confirmed) {
-      setIsSubmitting(true);
-      try {
-        const payload = {
-          applicantName: biodata.fullName,
-          institution: biodata.university,
-          major: biodata.major,
-          nim: biodata.nim,
-          phone: biodata.phone,
-          email: biodata.email,
-          address: biodata.address,
-          projectTitle: biodata.projectTitle,
-          skills: biodata.skills,
-          tools: biodata.tools,
-          startDate: biodata.startDate,
-          endDate: biodata.endDate,
-          fieldId: selectedKategori, // kategori_id yang dikirim ke backend (relasi lowongan/application ke kategori)
-          fieldName: selectedKategoriName,
-          kategoriName: selectedKategoriName,
-          registrationType,
-          teamMembers: registrationType === 'Kelompok' ? teamMembers : undefined,
-          documents: documents.map((d) => ({
-            id: d.id,
-            name: d.name,
-            fileName: d.fileName,
-            status: d.status,
-          })),
-          notes: 'Pendaftaran magang berhasil dikirim dan siap diverifikasi.',
-        };
+    if (!confirmed) return;
 
-        const result = onSubmitApplication
-          ? await onSubmitApplication(payload)
-          : await internalSubmitApplication(payload);
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('applicantName', biodata.fullName);
+      formData.append('institution', biodata.university);
+      formData.append('major', biodata.major);
+      formData.append('nim', biodata.nim);
+      formData.append('phone', biodata.phone);
+      formData.append('email', biodata.email);
+      formData.append('address', biodata.address);
+      formData.append('projectTitle', biodata.projectTitle);
+      formData.append('skills', biodata.skills);
+      formData.append('tools', biodata.tools);
+      formData.append('startDate', biodata.startDate);
+      formData.append('endDate', biodata.endDate);
+      formData.append('fieldId', selectedBidang);
+      formData.append('fieldName', selectedBidangName);
+      formData.append('kategoriName', selectedKategoriName);
+      formData.append('registrationType', registrationType);
+      formData.append('notes', 'Pendaftaran magang berhasil dikirim dan siap diverifikasi.');
 
-        setSubmittedApp(result);
-        setIsSubmitted(true);
-        showSuccessAlert(
-          'Pendaftaran Berhasil Dikirim!',
-          `Data pendaftaran magang Anda (${result.id}) telah tersimpan dan sedang dalam proses peninjauan oleh verifikator.`
-        );
-      } catch {
-        showWarningAlert('Gagal Mengirim', 'Terjadi kendala saat menyimpan pendaftaran. Silakan coba kembali.');
-      } finally {
-        setIsSubmitting(false);
+      if (registrationType === 'Kelompok') {
+        teamMembers.forEach((m, i) => {
+          formData.append(`teamMembers[${i}][fullName]`, m.fullName);
+          formData.append(`teamMembers[${i}][email]`, m.email);
+          formData.append(`teamMembers[${i}][phone]`, m.phone);
+          formData.append(`teamMembers[${i}][nim]`, m.nim);
+        });
       }
+
+      documents.forEach((d, i) => {
+        if (d.file) {
+          formData.append(`documents[${i}][document_type]`, d.name);
+          formData.append(`documents[${i}][file]`, d.file);
+        }
+      });
+
+      const result = onSubmitApplication
+        ? await onSubmitApplication(formData)
+        : await internalSubmitApplication(formData);
+
+      setSubmittedApp(result);
+      setIsSubmitted(true);
+      clearDraft(); // hapus draft setelah berhasil submit, form tidak perlu dipulihkan lagi
+      showSuccessAlert(
+        'Pendaftaran Berhasil Dikirim!',
+        `Data pendaftaran magang Anda (${result.id}) telah tersimpan dan sedang dalam proses peninjauan oleh verifikator.`
+      );
+    } catch {
+      showWarningAlert('Gagal Mengirim', 'Terjadi kendala saat menyimpan pendaftaran. Silakan coba kembali.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -300,6 +382,7 @@ export function PendaftaranFormView({
           setBiodata={setBiodata}
           onPhotoUpload={handlePhotoUpload}
           onNext={() => setCurrentStep(2)}
+           lastSavedAt={lastSavedAt} 
         />
       )}
 
