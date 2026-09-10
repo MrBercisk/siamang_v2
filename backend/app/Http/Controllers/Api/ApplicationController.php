@@ -149,6 +149,8 @@ class ApplicationController extends Controller
             'registrationType' => $application->registration_type,
             'status' => $application->status,
             'submittedAt' => $application->submitted_at?->toIso8601String(),
+            'reviewedAt' => $application->reviewed_at?->toIso8601String(), 
+            'acceptedAt' => $application->accepted_at?->toIso8601String(),
             'notes' => $application->admin_notes,
             'periode' => $application->periode?->name,
             'periodeStart' => $application->periode?->start_date?->toDateString(),
