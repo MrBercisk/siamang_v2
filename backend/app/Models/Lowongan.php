@@ -9,6 +9,8 @@ class Lowongan extends Model
 {
     use HasFactory;
 
+    protected $table = 'lowongan';
+
     protected $fillable = [
         'periode_id',
         'kategori_id',
@@ -22,7 +24,9 @@ class Lowongan extends Model
 
     protected function casts(): array
     {
-        return [
+         return [
+            'kuota' => 'integer',
+            'filled' => 'integer',
             'is_active' => 'boolean',
         ];
     }

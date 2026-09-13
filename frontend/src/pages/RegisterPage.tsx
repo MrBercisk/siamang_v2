@@ -7,13 +7,15 @@ interface RegisterPageProps {
   onNavigateLogin: () => void;
   onNavigateHome?: () => void;
   isLoading: boolean;
+  authError?: string | null;
 }
 
 export function RegisterPage({
   onRegister,
   onNavigateLogin,
   onNavigateHome,
-  isLoading
+  isLoading,
+  authError,
 }: RegisterPageProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -45,7 +47,7 @@ export function RegisterPage({
     });
 
     if (!success) {
-      setErrorMessage('Gagal mendaftar. Silakan periksa kembali data Anda.');
+      setErrorMessage(authError || 'Gagal mendaftar. Silakan periksa kembali data Anda.');
     }
   };
 

@@ -30,11 +30,6 @@ class UserResource extends JsonResource
             'nip' => $this->nip,
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
-
-            // Status magang saat ini (kalau ada), diambil dari relasi
-            // currentApplication yang sudah didefinisikan di model User —
-            // hanya dimuat kalau di-eager-load dari controller (whenLoaded),
-            // supaya endpoint ringan seperti /login tidak selalu query tambahan.
             'current_application' => $this->whenLoaded('currentApplication', fn () => [
                 'id' => $this->currentApplication->id,
                 'status' => $this->currentApplication->status,

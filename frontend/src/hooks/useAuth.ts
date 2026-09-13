@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, LoginCredentials, RegisterCredentials, AuthResponse } from '../types/auth';
-import { apiRequest, getStoredToken, setStoredToken } from '../lib/api';
+import { apiRequest, getStoredToken, setStoredToken, ApiError } from '../lib/api';
+import { showToast } from '../utils/swal';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(() => {
@@ -19,7 +20,7 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync token to state and local storage
+  // Sync token and user to state and local storage
   const handleAuthSuccess = (authUser: User, authToken: string) => {
     setUser(authUser);
     setToken(authToken);
@@ -33,14 +34,27 @@ export function useAuth() {
 
     setIsLoading(true);
     try {
-      // Endpoint Laravel Sanctum: GET /api/user
-      const res = await apiRequest<{ user: User } | User>('/user');
-      const userData = 'user' in res ? res.user : res;
+      // Endpoint Laravel Sanctum: GET /api/auth/me
+      let userData: User;
+      const res = await apiRequest<{ user: User }>('/auth/me');
+      if (res.user) {
+        userData = res.user;
+      } else {
+        throw new ApiError('Format respons pengguna tidak valid.');
+      }
+
       setUser(userData);
       localStorage.setItem('si_amang_user', JSON.stringify(userData));
-    } catch {
-      // If token invalid, clear local session
-      console.warn('Backend API connection offline or token expired. Using local active session if present.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        // Token expired or invalid
+        setUser(null);
+        setToken(null);
+        setStoredToken(null);
+        localStorage.removeItem('si_amang_user');
+      } else {
+        console.warn('Backend API offline. Preserving current session if available.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -52,70 +66,126 @@ export function useAuth() {
     }
   }, [token, fetchCurrentUser]);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
+
     try {
-      // POST to Laravel /api/login endpoint
-      const res = await apiRequest<AuthResponse>('/login', {
+      // POST to Laravel /api/auth/login endpoint
+      const res = await apiRequest<AuthResponse>('/auth/login', {
         method: 'POST',
         data: credentials,
       });
 
-      handleAuthSuccess(res.user, res.access_token);
+      const authUser = res.user || res.data?.user;
+      const authToken = res.token || res.access_token || res.data?.token || res.data?.access_token;
+
+      if (!authUser || !authToken) {
+        throw new ApiError('Format respons autentikasi tidak valid.');
+      }
+
+      handleAuthSuccess(authUser, authToken);
+      showToast('success', res.message || 'Berhasil masuk.');
       setIsLoading(false);
       return true;
     } catch (err: unknown) {
-      // Fallback preview mode login simulation if Laravel backend is not actively listening
-      console.info('Simulating auth login fallback for preview demonstration.');
-      const fallbackUser: User = {
-        id: 'usr_' + Date.now(),
-        name: credentials.email.split('@')[0].toUpperCase(),
-        email: credentials.email,
-        institution: 'Universitas Gadjah Mada',
-        role: 'applicant',
-      };
-      const fallbackToken = 'simulated_token_' + Date.now();
-      handleAuthSuccess(fallbackUser, fallbackToken);
       setIsLoading(false);
-      return true;
+
+      if (err instanceof ApiError) {
+        // If the server rejected the request with 401, 422, etc., DO NOT FALLBACK!
+        if (!err.isNetworkError) {
+          const msg = err.message || 'Login gagal. Periksa kembali email dan password.';
+          setError(msg);
+          showToast('error', msg);
+          return false;
+        }
+
+        // Only in network/offline scenario (e.g. preview environment where backend is not running)
+        console.info('[SI AMANG] Backend server unreachable. Running in offline preview simulation.');
+        showToast('info', 'Mode offline: Backend tidak terhubung, masuk dalam mode pratinjau.');
+        
+        const fallbackUser: User = {
+          id: 'usr_' + Date.now(),
+          name: credentials.email.split('@')[0].toUpperCase(),
+          email: credentials.email,
+          institution: 'Universitas Gadjah Mada',
+          role: 'applicant',
+        };
+        const fallbackToken = 'simulated_token_' + Date.now();
+        handleAuthSuccess(fallbackUser, fallbackToken);
+        return true;
+      }
+
+      const fallbackMsg = 'Terjadi kesalahan saat masuk.';
+      setError(fallbackMsg);
+      showToast('error', fallbackMsg);
+      return false;
     }
   };
 
-  const register = async (credentials: RegisterCredentials) => {
+  const register = async (credentials: RegisterCredentials): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
+
     try {
-      // POST to Laravel /api/register endpoint
-      const res = await apiRequest<AuthResponse>('/register', {
+      // POST to Laravel /api/auth/register endpoint
+      const res = await apiRequest<AuthResponse>('/auth/register', {
         method: 'POST',
         data: credentials,
       });
 
-      handleAuthSuccess(res.user, res.access_token);
+      const authUser = res.user || res.data?.user;
+      const authToken = res.token || res.access_token || res.data?.token || res.data?.access_token;
+
+      if (!authUser || !authToken) {
+        throw new ApiError('Format respons registrasi tidak valid.');
+      }
+
+      handleAuthSuccess(authUser, authToken);
+      showToast('success', res.message || 'Pendaftaran akun berhasil!');
       setIsLoading(false);
       return true;
     } catch (err: unknown) {
-      console.info('Simulating auth register fallback for preview demonstration.');
-      const fallbackUser: User = {
-        id: 'usr_' + Date.now(),
-        name: credentials.name,
-        email: credentials.email,
-        institution: credentials.institution || 'Universitas Negeri Yogyakarta',
-        nim: credentials.nim,
-        role: 'applicant',
-      };
-      const fallbackToken = 'simulated_token_' + Date.now();
-      handleAuthSuccess(fallbackUser, fallbackToken);
       setIsLoading(false);
-      return true;
+
+      if (err instanceof ApiError) {
+        // If the server explicitly rejected the registration (e.g. email already exists, 422)
+        if (!err.isNetworkError) {
+          const msg = err.message || 'Registrasi gagal. Periksa kembali data Anda.';
+          setError(msg);
+          showToast('error', msg);
+          return false;
+        }
+
+        // Offline network fallback for preview demonstration only
+        console.info('[SI AMANG] Backend server unreachable. Running in offline preview simulation.');
+        showToast('info', 'Mode offline: Backend tidak terhubung, akun simulasi dibuat.');
+
+        const fallbackUser: User = {
+          id: 'usr_' + Date.now(),
+          name: credentials.name,
+          email: credentials.email,
+          institution: credentials.institution || 'Universitas Negeri Yogyakarta',
+          nim: credentials.nim,
+          role: 'applicant',
+        };
+        const fallbackToken = 'simulated_token_' + Date.now();
+        handleAuthSuccess(fallbackUser, fallbackToken);
+        return true;
+      }
+
+      const fallbackMsg = 'Terjadi kesalahan saat mendaftar.';
+      setError(fallbackMsg);
+      showToast('error', fallbackMsg);
+      return false;
     }
   };
 
   const logout = async () => {
     setIsLoading(true);
     try {
-      await apiRequest('/logout', { method: 'POST' });
+      // POST to Laravel /api/auth/logout
+      await apiRequest('/auth/logout', { method: 'POST' });
     } catch {
       // Ignore network errors on logout
     } finally {
@@ -124,6 +194,7 @@ export function useAuth() {
       setStoredToken(null);
       localStorage.removeItem('si_amang_user');
       setIsLoading(false);
+      showToast('info', 'Anda telah keluar dari sistem.');
     }
   };
 

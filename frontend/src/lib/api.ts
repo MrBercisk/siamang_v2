@@ -4,6 +4,7 @@
  */
 
 const BASE_URL = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL || '/api';
+const SERVER_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
 
 export function getStoredToken(): string | null {
   return localStorage.getItem('si_amang_token');
@@ -17,15 +18,39 @@ export function setStoredToken(token: string | null) {
   }
 }
 
+export class ApiError extends Error {
+  status?: number;
+  errors?: Record<string, string[]>;
+  isNetworkError: boolean;
+
+  constructor(
+    message: string,
+    status?: number,
+    errors?: Record<string, string[]>,
+    isNetworkError = false
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.errors = errors;
+    this.isNetworkError = isNetworkError;
+  }
+}
+
 interface RequestOptions extends RequestInit {
   data?: unknown;
 }
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = getStoredToken();
+  const isFormData = options.data instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'Accept': 'application/json',
+    // Jangan set Content-Type manual untuk FormData — browser yang menentukan
+    // boundary multipart secara otomatis. Kalau dipaksa 'application/json',
+    // file di dalam FormData tidak akan terkirim dengan benar.
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string> || {}),
   };
 
@@ -39,7 +64,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
   };
 
   if (options.data) {
-    config.body = JSON.stringify(options.data);
+    config.body = isFormData ? (options.data as FormData) : JSON.stringify(options.data);
   }
 
   const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
@@ -53,15 +78,47 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+
+      // Build human-friendly message from Laravel error bag if available
+      let detailedMessage = errorData.message;
+      if (errorData.errors && typeof errorData.errors === 'object') {
+        const firstField = Object.keys(errorData.errors)[0];
+        if (firstField && Array.isArray(errorData.errors[firstField]) && errorData.errors[firstField].length > 0) {
+          detailedMessage = errorData.errors[firstField][0];
+        }
+      }
+
+      throw new ApiError(
+        detailedMessage || `Permintaan gagal dengan status ${response.status}`,
+        response.status,
+        errorData.errors,
+        false
+      );
     }
 
     return await response.json();
   } catch (err) {
-    // Graceful fallback logging for standalone preview mode when Laravel API server is not running
-    console.warn(`[SI AMANG API] Network request to ${url} failed. Using offline fallback data if applicable.`, err);
-    throw err;
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    // Network / offline error
+    console.warn(`[SI AMANG API] Network connection failed for ${url}:`, err);
+    throw new ApiError(
+      'Tidak dapat terhubung ke server backend (Network/Offline error).',
+      undefined,
+      undefined,
+      true
+    );
   }
+}
+export function resolveStorageUrl(filePath?: string | null): string | null {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+
+  const cleanPath = filePath.replace(/^\/+/, '');
+  const withStoragePrefix = cleanPath.startsWith('storage/') ? cleanPath : `storage/${cleanPath}`;
+
+  return `${SERVER_ORIGIN}/${withStoragePrefix}`;
 }
 
 // Default initial data for preview mode fallback

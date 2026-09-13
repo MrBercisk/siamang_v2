@@ -3,7 +3,7 @@ import { User } from '../../types/auth';
 import { ApplicationStatus } from '../../types/internship';
 import { RiwayatMagangView } from '../../components/pendaftar/RiwayatMagangView';
 import { ProfileView } from '../../components/pendaftar/ProfileView';
-import { PendaftaranFormView } from '../../components/pendaftar/PendaftaranFormView';
+import { PendaftaranFormView } from '../../components/pendaftar/pendaftaran/PendaftaranFormView';
 import { ReviewHeader } from '../../components/pendaftar/layout/ReviewHeader';
 import { ReviewSidebar, ReviewTab } from '../../components/pendaftar/layout/ReviewSidebar';
 import { HelpChatWidget } from '../../components/pendaftar/layout/HelpChatWidget';
@@ -14,17 +14,18 @@ interface PendaftarReviewDashboardProps {
   applications: ApplicationStatus[];
   onNavigate: (page: 'home' | 'info' | 'register' | 'login' | 'dashboard') => void;
   onLogout?: () => void;
-  onSwitchToAccepted?: () => void;
 }
 
 export function PendaftarReviewDashboard({
   user,
+  applications = [],
   onNavigate,
   onLogout,
-  onSwitchToAccepted,
 }: PendaftarReviewDashboardProps) {
   const [activeTab, setActiveTab] = useState<ReviewTab>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentApplications, setCurrentApplications] =
+    useState<ApplicationStatus[]>(applications);
 
   const handleLogout = () => {
     if (onLogout) onLogout();
@@ -38,7 +39,6 @@ export function PendaftarReviewDashboard({
         onGoToProfile={() => setActiveTab('profile')}
         onNavigateHome={() => onNavigate('home')}
         onLogout={handleLogout}
-        onSwitchToAccepted={onSwitchToAccepted}
       />
 
       <div className="flex-1 flex relative">
@@ -52,10 +52,24 @@ export function PendaftarReviewDashboard({
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden">
           {activeTab === 'dashboard' && (
-            <ReviewDashboardTab user={user} onSwitchToAccepted={onSwitchToAccepted} />
+            <ReviewDashboardTab
+              user={user}
+              applications={currentApplications}
+              onGoToPendaftaran={() => setActiveTab('pendaftaran')}
+            />
           )}
-          {activeTab === 'pendaftaran' && <PendaftaranFormView user={user} />}
-          {activeTab === 'riwayat' && <RiwayatMagangView />}
+          {activeTab === 'pendaftaran' && (
+         <PendaftaranFormView
+            user={user}
+            onSuccessSubmit={(result) => {
+              setCurrentApplications((prev) => [result, ...prev]);
+              setActiveTab('dashboard');
+            }}
+          />
+          )}
+          {activeTab === 'riwayat' && (
+            <RiwayatMagangView applications={currentApplications} />
+          )}
           {activeTab === 'profile' && <ProfileView user={user} />}
         </main>
       </div>

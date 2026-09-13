@@ -216,12 +216,13 @@ export const JadwalBimbinganAdminView: React.FC = () => {
 
   // Delete Schedule
   const handleDeleteSchedule = async (eventId: string, eventTitle: string) => {
-    const confirm = await showConfirmAlert(
-      'Hapus Jadwal Bimbingan?',
-      `Apakah Anda yakin ingin menghapus agenda "${eventTitle}"? Jika tersambung, agenda juga akan dihapus dari Google Calendar.`
-    );
+    const confirm = await showConfirmAlert({
+      title: 'Hapus Jadwal Bimbingan?',
+      text: `Apakah Anda yakin ingin menghapus agenda "${eventTitle}"? Jika tersambung, agenda juga akan dihapus dari Google Calendar.`,
+      confirmButtonText: 'Ya, Hapus',
+    });
 
-    if (confirm.isConfirmed) {
+    if (confirm) {
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
       setShowDetailModal(false);
       showToast('success', 'Jadwal berhasil dihapus dari sistem & Google Calendar.');

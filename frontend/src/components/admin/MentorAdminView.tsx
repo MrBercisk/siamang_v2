@@ -219,12 +219,13 @@ export const MentorAdminView: React.FC = () => {
 
   // Delete Mentor
   const handleDeleteMentor = async (item: MentorItem) => {
-    const confirm = await showConfirmAlert(
-      'Hapus Mentor ini?',
-      `Apakah Anda yakin ingin menghapus mentor "${item.name}"? Mahasiswa bimbingan mentor ini perlu dialokasikan ulang ke mentor lain.`
-    );
+    const confirm = await showConfirmAlert({
+      title: 'Hapus Mentor ini?',
+      text: `Apakah Anda yakin ingin menghapus mentor "${item.name}"? Mahasiswa bimbingan mentor ini perlu dialokasikan ulang ke mentor lain.`,
+      confirmButtonText: 'Ya, Hapus',
+    });
 
-    if (confirm.isConfirmed) {
+    if (confirm) {
       setMentorList((prev) => prev.filter((m) => m.id !== item.id));
       showSuccessAlert('Mentor Dihapus', `Data mentor "${item.name}" telah dihapus.`);
     }

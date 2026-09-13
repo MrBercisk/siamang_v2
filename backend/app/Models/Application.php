@@ -9,6 +9,8 @@ class Application extends Model
 {
     use HasFactory;
 
+    protected $table = 'application';
+
     protected $fillable = [
         'user_id',
         'periode_id',
@@ -34,6 +36,7 @@ class Application extends Model
         'admin_notes',
         'mentor_id',
         'submitted_at',
+        'declared_at',
         'reviewed_at',
         'accepted_at',
     ];
@@ -44,6 +47,7 @@ class Application extends Model
             'internship_start' => 'date',
             'internship_end' => 'date',
             'submitted_at' => 'datetime',
+            'declared_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'accepted_at' => 'datetime',
             'ipk' => 'decimal:2',

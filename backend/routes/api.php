@@ -1,16 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\BidangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LowonganController;
 use App\Http\Controllers\Api\PeriodeController;
 use Illuminate\Support\Facades\Route;
-
-// Catatan: file ini cuma berisi route untuk Fase 1 (Auth) & Fase 2
-// (Master Data). Kalau routes/api.php di project kamu sudah ada isi
-// lain, JANGAN ditimpa — cukup tambahkan blok di bawah ini ke file
-// yang sudah ada.
 
 Route::prefix('auth')->group(function () {
     // Publik
@@ -24,11 +20,14 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// Master Data — GET publik (dipakai form pendaftaran & landing page),
-// method lain (POST/PUT/DELETE) khusus admin lewat middleware 'role:admin'.
-// Route::apiResource otomatis expand jadi index/show/store/update/destroy.
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/applications', [ApplicationController::class, 'index']);
+    Route::post('/applications', [ApplicationController::class, 'store']);
+});
 
-Route::get('/periodes/active', [PeriodeController::class, 'active']); // taruh sebelum apiResource biar tidak ketiban route show({periode})
+
+
+Route::get('/periodes/active', [PeriodeController::class, 'active']);
 
 Route::apiResource('bidangs', BidangController::class)->only(['index', 'show']);
 Route::apiResource('kategoris', KategoriController::class)->only(['index', 'show']);

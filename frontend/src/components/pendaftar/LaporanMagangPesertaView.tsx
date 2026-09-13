@@ -101,10 +101,11 @@ export const LaporanMagangPesertaView: React.FC = () => {
   };
 
   const handleDeleteLaporan = async () => {
-    const confirmed = await showConfirmAlert(
-      'Hapus Laporan?',
-      'Apakah Anda yakin ingin menghapus laporan ini?'
-    );
+    const confirmed = await showConfirmAlert({
+      title: 'Hapus Laporan?',
+      text: 'Apakah Anda yakin ingin menghapus laporan ini?',
+      confirmButtonText: 'Ya, Hapus',
+    });
     if (confirmed) {
       showSuccessAlert('Terhapus', 'Laporan magang berhasil dihapus.');
       setCurrentScenario('belum_upload');

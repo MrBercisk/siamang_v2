@@ -8,6 +8,7 @@ interface LoginPageProps {
   onNavigateForgotPassword: () => void;
   onNavigateHome: () => void;
   isLoading: boolean;
+  authError?: string | null;
 }
 
 export function LoginPage({
@@ -15,7 +16,8 @@ export function LoginPage({
   onNavigateRegister,
   onNavigateForgotPassword,
   onNavigateHome,
-  isLoading
+  isLoading,
+  authError,
 }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +35,7 @@ export function LoginPage({
 
     const success = await onLogin({ email, password });
     if (!success) {
-      setErrorMessage('Gagal masuk. Periksa email dan password Anda.');
+      setErrorMessage(authError || 'Gagal masuk. Periksa email dan password Anda.');
     }
   };
 

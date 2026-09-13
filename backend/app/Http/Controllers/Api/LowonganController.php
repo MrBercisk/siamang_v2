@@ -51,7 +51,7 @@ class LowonganController extends Controller
     {
         $validated = $request->validate([
             'periode_id' => ['required', 'exists:periodes,id'],
-            'kategori_id' => ['required', 'exists:kategoris,id'],
+            'kategori_id' => ['required', 'exists:kategori,id'],
             'project' => ['nullable', 'string', 'max:255'],
             'definisi' => ['nullable', 'string'],
             'detail_kebutuhan' => ['nullable', 'string'],
@@ -74,7 +74,7 @@ class LowonganController extends Controller
     {
         $validated = $request->validate([
             'periode_id' => ['sometimes', 'exists:periodes,id'],
-            'kategori_id' => ['sometimes', 'exists:kategoris,id'],
+            'kategori_id' => ['sometimes', 'exists:kategori,id'],
             'project' => ['sometimes', 'nullable', 'string', 'max:255'],
             'definisi' => ['sometimes', 'nullable', 'string'],
             'detail_kebutuhan' => ['sometimes', 'nullable', 'string'],

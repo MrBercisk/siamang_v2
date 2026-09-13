@@ -11,27 +11,44 @@ interface ProfileViewProps {
   user: User;
 }
 
-export function ProfileView({ user }: ProfileViewProps) {
-  // Avatar state
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+const formatAccountCreated = (iso?: string): string =>
+  iso
+    ? new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+      }).format(new Date(iso))
+    : 'Belum diketahui';
 
-  // Personal details state
+export function ProfileView({ user }: ProfileViewProps) {
+  // Avatar state — diinisialisasi dari data user asli, bukan selalu null.
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatar_url || null);
+
+  // Personal details state — diisi dari data user asli. Field opsional yang
+  // belum diisi user ditampilkan sebagai string kosong, lalu di tampilan
+  // read-only akan jatuh ke placeholder "Belum diisi".
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [personalDetails, setPersonalDetails] = useState({
-    nim: '123456789',
-    fullName: user.name || 'Leona Strive',
-    phone: '08xxxxxxxxxx',
-    university: user.institution || 'Universitas Bina Sarana Informatika',
-    major: 'Sistem Informasi',
+    nim: user.nim || '',
+    fullName: user.name || '',
+    phone: user.phone || '',
+    university: user.institution || '',
+    major: user.major || '',
   });
 
-  // Account details state
+  // Account details state — email dari data asli. Password tidak pernah
+  // ditampilkan dari server (memang tidak dikirim balik demi keamanan),
+  // jadi field ini cuma indikator visual, bukan nilai asli.
   const [isEditingAccount, setIsEditingAccount] = useState(false);
   const [accountDetails, setAccountDetails] = useState({
-    email: user.email || 'leona@gmail.com',
-    password: '•••••••••',
-    accountCreated: 'August 01, 2025 10:00',
+    email: user.email || '',
+    password: '••••••••',
   });
+
+  const accountCreatedLabel = formatAccountCreated(user.created_at);
 
   const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,9 +60,19 @@ export function ProfileView({ user }: ProfileViewProps) {
         );
         return;
       }
+
+      // Revoke URL lama dulu (kalau itu blob lokal) supaya tidak bocor memori.
+      if (avatarUrl && avatarUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+
       const url = URL.createObjectURL(file);
       setAvatarUrl(url);
-      showToast('success', 'Foto profil berhasil diperbarui!');
+
+      // TODO: hubungkan ke endpoint upload foto profil begitu tersedia,
+      // misal: await apiRequest('/profile/avatar', { method: 'POST', data: formData })
+      // Untuk sekarang, foto hanya tersimpan di sesi ini (hilang saat refresh).
+      showToast('success', 'Foto profil berhasil diperbarui untuk sesi ini.');
     }
   };
 
@@ -58,8 +85,11 @@ export function ProfileView({ user }: ProfileViewProps) {
     });
 
     if (confirmed) {
+      // TODO: hubungkan ke endpoint update profil begitu tersedia, misal:
+      // await apiRequest('/profile', { method: 'PUT', data: personalDetails });
+      // Untuk sekarang perubahan hanya tersimpan di state lokal (hilang saat refresh).
       setIsEditingPersonal(false);
-      showSuccessAlert('Berhasil!', 'Personal Details berhasil diperbarui.');
+      showSuccessAlert('Berhasil!', 'Personal Details berhasil diperbarui untuk sesi ini.');
     }
   };
 
@@ -72,8 +102,9 @@ export function ProfileView({ user }: ProfileViewProps) {
     });
 
     if (confirmed) {
+      // TODO: hubungkan ke endpoint update akun/password begitu tersedia.
       setIsEditingAccount(false);
-      showSuccessAlert('Berhasil!', 'Account Details berhasil diperbarui.');
+      showSuccessAlert('Berhasil!', 'Account Details berhasil diperbarui untuk sesi ini.');
     }
   };
 
@@ -120,10 +151,9 @@ export function ProfileView({ user }: ProfileViewProps) {
 
         {/* Right Column: Personal Details & Account Details */}
         <div className="lg:col-span-8 space-y-6">
-          
+
           {/* Card 1: Personal Details */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            {/* Card Header Bar */}
             <div className="bg-[#EDF2F7] px-5 py-3.5 flex items-center justify-between border-b border-slate-200/80">
               <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                 Personal Details
@@ -137,7 +167,6 @@ export function ProfileView({ user }: ProfileViewProps) {
               </button>
             </div>
 
-            {/* Card Content */}
             <div className="p-5 sm:p-6">
               {isEditingPersonal ? (
                 <form onSubmit={handleSavePersonal} className="space-y-4 text-xs">
@@ -197,23 +226,23 @@ export function ProfileView({ user }: ProfileViewProps) {
                 <div className="divide-y divide-slate-100 text-xs sm:text-sm">
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">NIM</span>
-                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.nim}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.nim || 'Belum diisi'}</span>
                   </div>
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">Nama Lengkap</span>
-                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.fullName}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.fullName || 'Belum diisi'}</span>
                   </div>
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">No. Telp</span>
-                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.phone}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.phone || 'Belum diisi'}</span>
                   </div>
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">Universitas</span>
-                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.university}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.university || 'Belum diisi'}</span>
                   </div>
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">Bidang Studi</span>
-                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.major}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{personalDetails.major || 'Belum diisi'}</span>
                   </div>
                 </div>
               )}
@@ -222,7 +251,6 @@ export function ProfileView({ user }: ProfileViewProps) {
 
           {/* Card 2: Account Details */}
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            {/* Card Header Bar */}
             <div className="bg-[#EDF2F7] px-5 py-3.5 flex items-center justify-between border-b border-slate-200/80">
               <h3 className="text-xs sm:text-sm font-bold text-slate-900">
                 Account Details
@@ -236,7 +264,6 @@ export function ProfileView({ user }: ProfileViewProps) {
               </button>
             </div>
 
-            {/* Card Content */}
             <div className="p-5 sm:p-6">
               {isEditingAccount ? (
                 <form onSubmit={handleSaveAccount} className="space-y-4 text-xs">
@@ -253,7 +280,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                     <label className="block font-bold text-slate-700 mb-1">Password Baru</label>
                     <input
                       type="password"
-                      placeholder="Masukkan password baru"
+                      placeholder="Masukkan password baru (kosongkan jika tidak diubah)"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200"
                     />
                   </div>
@@ -268,7 +295,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                 <div className="divide-y divide-slate-100 text-xs sm:text-sm">
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">Email</span>
-                    <span className="font-bold text-slate-900 w-2/3">{accountDetails.email}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{accountDetails.email || 'Belum diisi'}</span>
                   </div>
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">Password</span>
@@ -276,7 +303,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                   </div>
                   <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="font-semibold text-slate-500 w-1/3">Account Created</span>
-                    <span className="font-bold text-slate-900 w-2/3">{accountDetails.accountCreated}</span>
+                    <span className="font-bold text-slate-900 w-2/3">{accountCreatedLabel}</span>
                   </div>
                 </div>
               )}

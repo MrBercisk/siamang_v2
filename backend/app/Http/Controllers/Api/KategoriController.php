@@ -43,7 +43,7 @@ class KategoriController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'bidang_id' => ['required', 'exists:bidangs,id'],
+            'bidang_id' => ['required', 'exists:bidang,id'],
             'name' => ['required', 'string', 'max:255'],
             'quota' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string'],
@@ -60,7 +60,7 @@ class KategoriController extends Controller
     public function update(Request $request, Kategori $kategori): JsonResponse
     {
         $validated = $request->validate([
-            'bidang_id' => ['sometimes', 'exists:bidangs,id'],
+            'bidang_id' => ['sometimes', 'exists:bidang,id'],
             'name' => ['sometimes', 'string', 'max:255'],
             'quota' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'description' => ['sometimes', 'nullable', 'string'],

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { User } from '../../types/auth';
+import { ApplicationStatus } from '../../types/internship';
 import { RiwayatMagangView } from '../../components/pendaftar/RiwayatMagangView';
 import { ProfileView } from '../../components/pendaftar/ProfileView';
 import { ProgressMagangPesertaView } from '../../components/pendaftar/ProgressMagangPesertaView';
@@ -12,16 +13,16 @@ import { ForumDiskusiPesertaTab } from '../../components/pendaftar/tabs/ForumDis
 
 interface PendaftarAcceptedDashboardProps {
   user: User;
+  applications: ApplicationStatus[];
   onNavigate: (page: 'home' | 'info' | 'register' | 'login' | 'dashboard') => void;
   onLogout?: () => void;
-  onSwitchToReview?: () => void;
 }
 
 export function PendaftarAcceptedDashboard({
   user,
+  applications,
   onNavigate,
   onLogout,
-  onSwitchToReview,
 }: PendaftarAcceptedDashboardProps) {
   const [activeTab, setActiveTab] = useState<AcceptedTab>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -38,7 +39,6 @@ export function PendaftarAcceptedDashboard({
         onGoToProfile={() => setActiveTab('profile')}
         onNavigateHome={() => onNavigate('home')}
         onLogout={handleLogout}
-        onSwitchToReview={onSwitchToReview}
       />
 
       <div className="flex-1 flex relative">
@@ -56,7 +56,7 @@ export function PendaftarAcceptedDashboard({
           {activeTab === 'forum' && <ForumDiskusiPesertaTab user={user} />}
           {activeTab === 'laporan' && <LaporanMagangPesertaView />}
           {activeTab === 'nilai' && <NilaiMagangPesertaView user={user} />}
-          {activeTab === 'riwayat' && <RiwayatMagangView />}
+          {activeTab === 'riwayat' && <RiwayatMagangView applications={applications} />}
           {activeTab === 'profile' && <ProfileView user={user} />}
         </main>
       </div>

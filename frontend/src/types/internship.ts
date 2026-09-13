@@ -35,14 +35,50 @@ export interface ApplicationRequirement {
   fileTypes: string[];
 }
 
+export interface ApplicationDocument {
+  id: number;
+  documentType: string;
+  originalName: string;
+  filePath: string;
+  status: string;
+}
+
+export interface ApplicationTeamMember {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  nim: string;
+}
+
 export interface ApplicationStatus {
   id: string;
   applicantName: string;
   institution: string;
   major: string;
+  nim?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  projectTitle?: string;
+  skills?: string;
+  tools?: string;
+  startDate?: string;
+  endDate?: string;
   fieldId: string;
   fieldName: string;
+  kategoriName?: string;
+  lowonganId?: string;
+  lowongan?: string;
+  registrationType?: 'Individu' | 'Kelompok';
+  teamMembers?: ApplicationTeamMember[];
+  documents?: ApplicationDocument[];
   status: 'pending' | 'reviewing' | 'accepted' | 'rejected';
   submittedAt: string;
+  reviewedAt?: string;
+  acceptedAt?: string;
   notes?: string;
+  periode?: string;
+  periodeStart?: string;
+  periodeEnd?: string;
 }

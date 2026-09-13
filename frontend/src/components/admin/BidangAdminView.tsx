@@ -165,12 +165,13 @@ export const BidangAdminView: React.FC = () => {
 
   // Delete Bidang with SweetAlert Confirmation
   const handleDeleteBidang = async (item: BidangItem) => {
-    const confirm = await showConfirmAlert(
-      'Hapus Bidang Ini?',
-      `Apakah Anda yakin ingin menghapus bidang "${item.name}"? Kategori magang yang bernaung di bawah bidang ini mungkin perlu disesuaikan.`
-    );
+    const confirm = await showConfirmAlert({
+      title: 'Hapus Bidang Ini?',
+      text: `Apakah Anda yakin ingin menghapus bidang "${item.name}"? Kategori magang yang bernaung di bawah bidang ini mungkin perlu disesuaikan.`,
+      confirmButtonText: 'Ya, Hapus',
+    });
 
-    if (confirm.isConfirmed) {
+    if (confirm) {
       setBidangList((prev) => prev.filter((b) => b.id !== item.id));
       showSuccessAlert('Bidang Dihapus', `Data bidang "${item.name}" telah dihapus dari sistem.`);
     }

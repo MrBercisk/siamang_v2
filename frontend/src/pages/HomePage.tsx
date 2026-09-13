@@ -5,6 +5,7 @@ import { InternshipInfoSection } from '../components/InternshipInfoSection';
 import { ApplicationModal } from '../components/ApplicationModal';
 import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus } from '../types/internship';
 import { User } from '../types/auth';
+import { PageType } from '../types/navigation';
 
 interface HomePageProps {
   categories: InternshipCategory[];
@@ -12,7 +13,7 @@ interface HomePageProps {
   requirements: ApplicationRequirement[];
   applications: ApplicationStatus[];
   user: User | null;
-  onNavigate: (page: 'home' | 'info' | 'register' | 'login' | 'dashboard') => void;
+  onNavigate: (page: PageType) => void;
   onSubmitApplication: (data: {
     fieldId: string;
     fieldName: string;
