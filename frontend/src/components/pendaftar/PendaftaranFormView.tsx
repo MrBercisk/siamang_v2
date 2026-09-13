@@ -1,16 +1,6 @@
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { User } from '../../types/auth';
 import { ApplicationStatus } from '../../types/internship';
-import { useInternshipData } from '../../hooks/useInternshipData';
-import { ApiError } from '../../lib/api';
-import {
-  showSuccessAlert,
-  showWarningAlert,
-  showConfirmAlert,
-  showDeleteConfirmAlert,
-  showToast,
-} from '../../utils/swal';
-import { BiodataState, DocumentFile, RegistrationType, TeamMember } from './types';
+import { usePendaftaranForm } from './hooks/usePendaftaranForm';
 import { StepperHeader } from './steps/StepperHeader';
 import { StepBiodata } from './steps/StepBiodata';
 import { StepTipePendaftaran } from './steps/StepTipePendaftaran';
@@ -25,705 +15,27 @@ interface PendaftaranFormViewProps {
   onSuccessSubmit?: (application: ApplicationStatus) => void;
 }
 
-const DRAFT_KEY = 'si_amang_pendaftaran_draft';
-
-// Batas keamanan tambahan sesuai validasi backend (file max:20480 KB = 20MB)
-const BACKEND_MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
-
-interface DraftState {
-  currentStep: number;
-  biodata: BiodataState;
-  registrationType: RegistrationType;
-  teamMembers: TeamMember[];
-  selectedBidang: string;
-  selectedKategori: string;
-  selectedLowongan: string;
-  isDeclared: boolean;
-  savedAt: string;
-}
-
-function loadDraft(): DraftState | null {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as DraftState;
-  } catch {
-    return null;
-  }
-}
-
-function getDefaultBiodata(user: User): BiodataState {
-  return {
-    photoUrl: '',
-    fullName: user.name || 'Leona Strive',
-    email: user.email || 'leona@gmail.com',
-    phone: '08123456789',
-    address: 'Yogyakarta',
-    university: user.institution || '',
-    major: '',
-    semester: '5',
-    nim: '',
-    projectTitle: '',
-    skills: '',
-    tools: '',
-    startDate: '',
-    endDate: '',
-  };
-}
-
-// ── Persistensi Berkas via IndexedDB ────────────────────────────────
-//
-// localStorage tidak bisa dipakai untuk menyimpan objek File/Blob (hanya
-// string, dan kapasitasnya cuma ~5MB — tidak cukup untuk video 20MB).
-// IndexedDB bisa menyimpan File asli tanpa perlu diubah ke base64, dan
-// kapasitasnya jauh lebih besar. Ini dipakai supaya berkas yang sudah
-// diupload tidak hilang saat halaman di-refresh sebelum submit final.
-
-const FILES_DB_NAME = 'si_amang_files_db';
-const FILES_STORE_NAME = 'documents';
-const FILES_DB_VERSION = 1;
-
-function openFilesDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-      reject(new Error('IndexedDB tidak tersedia di browser ini.'));
-      return;
-    }
-
-    const request = indexedDB.open(FILES_DB_NAME, FILES_DB_VERSION);
-
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(FILES_STORE_NAME)) {
-        db.createObjectStore(FILES_STORE_NAME);
-      }
-    };
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function saveDocumentFileToDb(docId: number, file: File): Promise<void> {
-  const db = await openFilesDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE_NAME, 'readwrite');
-    tx.objectStore(FILES_STORE_NAME).put(file, docId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function deleteDocumentFileFromDb(docId: number): Promise<void> {
-  const db = await openFilesDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE_NAME, 'readwrite');
-    tx.objectStore(FILES_STORE_NAME).delete(docId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function getAllDocumentFilesFromDb(): Promise<Record<number, File>> {
-  const db = await openFilesDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE_NAME, 'readonly');
-    const store = tx.objectStore(FILES_STORE_NAME);
-    const result: Record<number, File> = {};
-    const cursorRequest = store.openCursor();
-
-    cursorRequest.onsuccess = () => {
-      const cursor = cursorRequest.result;
-      if (cursor) {
-        result[Number(cursor.key)] = cursor.value as File;
-        cursor.continue();
-      } else {
-        resolve(result);
-      }
-    };
-    cursorRequest.onerror = () => reject(cursorRequest.error);
-  });
-}
-
-async function clearAllDocumentFilesFromDb(): Promise<void> {
-  const db = await openFilesDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FILES_STORE_NAME, 'readwrite');
-    tx.objectStore(FILES_STORE_NAME).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-// ── Helper Validasi Berkas ──────────────────────────────────────────
-
-/**
- * Mengonversi teks ukuran seperti "200 KB", "2 MB", "1 MB" menjadi jumlah byte.
- */
-function parseMaxSizeToBytes(maxSize: string): number {
-  const match = maxSize.trim().match(/^([\d.]+)\s*(KB|MB|GB)$/i);
-  if (!match) return BACKEND_MAX_FILE_SIZE_BYTES; // fallback aman kalau format tak dikenali
-
-  const value = parseFloat(match[1]);
-  const unit = match[2].toUpperCase();
-
-  switch (unit) {
-    case 'KB':
-      return value * 1024;
-    case 'MB':
-      return value * 1024 * 1024;
-    case 'GB':
-      return value * 1024 * 1024 * 1024;
-    default:
-      return BACKEND_MAX_FILE_SIZE_BYTES;
-  }
-}
-
-/**
- * Memetakan teks format ("JPG / PNG", "PDF", "MP4") ke daftar ekstensi & MIME type yang diizinkan.
- */
-function getAllowedTypes(format: string): { extensions: string[]; mimeTypes: string[] } {
-  const normalized = format.toUpperCase();
-  const extensions: string[] = [];
-  const mimeTypes: string[] = [];
-
-  if (normalized.includes('JPG') || normalized.includes('JPEG')) {
-    extensions.push('jpg', 'jpeg');
-    mimeTypes.push('image/jpeg');
-  }
-  if (normalized.includes('PNG')) {
-    extensions.push('png');
-    mimeTypes.push('image/png');
-  }
-  if (normalized.includes('PDF')) {
-    extensions.push('pdf');
-    mimeTypes.push('application/pdf');
-  }
-  if (normalized.includes('MP4')) {
-    extensions.push('mp4');
-    mimeTypes.push('video/mp4');
-  }
-  if (normalized.includes('DOC')) {
-    extensions.push('doc', 'docx');
-    mimeTypes.push('application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-  }
-
-  return { extensions, mimeTypes };
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 1)} MB`;
-  }
-  return `${Math.round(bytes / 1024)} KB`;
-}
-
-interface FileValidationResult {
-  valid: boolean;
-  errorTitle?: string;
-  errorMessage?: string;
-}
-
-/**
- * Validasi satu file terhadap aturan dokumen (format & ukuran) sebelum diizinkan diunggah.
- * Mencerminkan aturan validasi di backend (ApplicationController::store), supaya user
- * mendapat feedback instan tanpa harus menunggu response server.
- */
-function validateDocumentFile(file: File, doc: DocumentFile): FileValidationResult {
-  const { extensions, mimeTypes } = getAllowedTypes(doc.format);
-  const fileExtension = file.name.split('.').pop()?.toLowerCase() ?? '';
-
-  // Validasi format/ekstensi file
-  const isExtensionValid = extensions.length === 0 || extensions.includes(fileExtension);
-  const isMimeValid = mimeTypes.length === 0 || mimeTypes.includes(file.type);
-
-  if (!isExtensionValid && !isMimeValid) {
-    return {
-      valid: false,
-      errorTitle: 'Format Berkas Tidak Sesuai',
-      errorMessage: `Berkas "${doc.name}" harus berformat ${doc.format}. Berkas yang Anda pilih (.${fileExtension || 'tidak dikenali'}) tidak diizinkan.`,
-    };
-  }
-
-  // Validasi ukuran file sesuai batas per-dokumen
-  const maxBytes = parseMaxSizeToBytes(doc.maxSize);
-  if (file.size > maxBytes) {
-    return {
-      valid: false,
-      errorTitle: 'Ukuran Berkas Terlalu Besar',
-      errorMessage: `Ukuran berkas "${doc.name}" (${formatBytes(file.size)}) melebihi batas maksimal ${doc.maxSize}. Silakan kompres atau pilih berkas lain.`,
-    };
-  }
-
-  // Validasi batas keamanan tambahan sesuai limit backend (20MB)
-  if (file.size > BACKEND_MAX_FILE_SIZE_BYTES) {
-    return {
-      valid: false,
-      errorTitle: 'Ukuran Berkas Melebihi Batas Server',
-      errorMessage: `Ukuran berkas "${doc.name}" melebihi batas maksimal yang diizinkan server (20 MB).`,
-    };
-  }
-
-  // Validasi berkas kosong (0 byte), indikasi file rusak/corrupt
-  if (file.size === 0) {
-    return {
-      valid: false,
-      errorTitle: 'Berkas Tidak Valid',
-      errorMessage: `Berkas "${doc.name}" tampak kosong atau rusak. Silakan pilih berkas lain.`,
-    };
-  }
-
-  return { valid: true };
-}
-
-const DOCUMENT_TYPE_SLUG_MAP: Record<number, string> = {
-  1: 'pas_foto',
-  2: 'berkas_persyaratan',
-  3: 'nda',
-  4: 'surat_permohonan',
-  5: 'video_perkenalan',
-};
-// ─────────────────────────────────────────────────────────────────────
-
 export function PendaftaranFormView({
   user,
   onSubmitApplication,
   onSuccessSubmit,
 }: PendaftaranFormViewProps) {
-  const {
-    bidangs,
-    kategoriByBidang,
-    lowonganByKategori,
-    submitApplication: internalSubmitApplication,
-  } = useInternshipData();
-  const [submittedApp, setSubmittedApp] = useState<ApplicationStatus | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const form = usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit });
 
-  // Muat draft yang tersimpan (kalau ada) sekali saat komponen pertama kali dirender
-  const [initialDraft] = useState<DraftState | null>(() => loadDraft());
-
-  // Current Step: 1 = Biodata, 2 = Tipe Pendaftaran, 3 = Bidang & Kategori, 4 = Berkas, 5 = Review & Submit
-  const [currentStep, setCurrentStep] = useState<number>(initialDraft?.currentStep ?? 1);
-
-  // Step 1: Biodata State
-  const [biodata, setBiodata] = useState<BiodataState>(
-    initialDraft?.biodata ?? getDefaultBiodata(user)
-  );
-
-  // Step 2: Tipe Pendaftaran State
-  const [registrationType, setRegistrationType] = useState<RegistrationType>(
-    initialDraft?.registrationType ?? 'Kelompok'
-  );
-  // Default kosong — user memang harus mengisi sendiri lewat tombol "Tambah Anggota".
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialDraft?.teamMembers ?? []);
-
-  // Step 3: Bidang & Kategori State
-  const [selectedBidang, setSelectedBidang] = useState<string>(initialDraft?.selectedBidang ?? '');
-  const [selectedKategori, setSelectedKategori] = useState<string>(initialDraft?.selectedKategori ?? '');
-
-  const [selectedLowongan, setSelectedLowongan] = useState<string>(
-    initialDraft?.selectedLowongan ?? ''
-  );
-
-  // Step 4: Berkas State — metadata-nya statis di sini, tapi File asli
-  // dipulihkan secara async dari IndexedDB lewat useEffect di bawah,
-  // supaya tidak hilang saat halaman di-refresh sebelum submit final.
-  const [documents, setDocuments] = useState<DocumentFile[]>([
-    {
-      id: 1,
-      name: 'Pas Foto 3 × 4',
-      desc: 'Pas foto terbaru dengan latar belakang bebas',
-      required: true,
-      format: 'JPG / PNG',
-      maxSize: '200 KB',
-      fileName: undefined,
-      status: 'Belum Upload Berkas',
-    },
-    {
-      id: 2,
-      name: 'Berkas Persyaratan Pendaftaran',
-      desc: 'Gabungkan semua berkas persyaratan dalam 1 file PDF',
-      required: true,
-      format: 'PDF',
-      maxSize: '2 MB',
-      fileName: undefined,
-      status: 'Belum Upload Berkas',
-    },
-    {
-      id: 3,
-      name: 'Surat NDA Perjanjian Magang Mahasiswa',
-      desc: 'Surat NDA yang sudah ditandatangani peserta',
-      required: true,
-      format: 'PDF',
-      maxSize: '1 MB',
-      fileName: undefined,
-      status: 'Belum Upload Berkas',
-    },
-    {
-      id: 4,
-      name: 'Surat Permohonan',
-      desc: 'Surat permohonan magang dari kampus/institusi',
-      required: true,
-      format: 'PDF',
-      maxSize: '1 MB',
-      fileName: undefined,
-      status: 'Belum Upload Berkas',
-    },
-    {
-      id: 5,
-      name: 'Video Perkenalan',
-      desc: 'Video perkenalan diri (maks. 2 menit)',
-      required: false,
-      format: 'MP4',
-      maxSize: '20 MB',
-      fileName: undefined,
-      status: 'Belum Upload Berkas',
-    },
-  ]);
-
-  const [isRestoringFiles, setIsRestoringFiles] = useState<boolean>(true);
-
-  // Pulihkan berkas yang sudah diupload sebelumnya (dari IndexedDB), sekali
-  // saat komponen pertama kali dirender. Ini yang membuat berkas tidak
-  // hilang lagi saat halaman di-refresh.
-  useEffect(() => {
-    let cancelled = false;
-
-    getAllDocumentFilesFromDb()
-      .then((filesById) => {
-        if (cancelled || Object.keys(filesById).length === 0) return;
-
-        setDocuments((prev) =>
-          prev.map((doc) => {
-            const restoredFile = filesById[doc.id];
-            if (!restoredFile) return doc;
-            return {
-              ...doc,
-              file: restoredFile,
-              fileName: restoredFile.name,
-              status: 'Berhasil Upload',
-            };
-          })
-        );
-      })
-      .catch(() => {
-        // IndexedDB tidak tersedia/diblokir (mis. mode private browsing) —
-        // abaikan diam-diam, user tinggal upload ulang secara manual.
-      })
-      .finally(() => {
-        if (!cancelled) setIsRestoringFiles(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Step 5: Pernyataan Checkbox
-  const [isDeclared, setIsDeclared] = useState(initialDraft?.isDeclared ?? false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialDraft?.savedAt ?? null);
-
-  // Simpan draft otomatis setiap kali data berubah (kecuali dokumen, karena
-  // File-nya sendiri sudah dipersist terpisah lewat IndexedDB di atas)
-  useEffect(() => {
-    if (isSubmitted) return; // jangan simpan draft lagi setelah berhasil submit
-
-    const timeout = setTimeout(() => {
-      const draft: DraftState = {
-        currentStep,
-        biodata,
-        registrationType,
-        teamMembers,
-        selectedBidang,
-        selectedKategori,
-        selectedLowongan,
-        isDeclared,
-        savedAt: new Date().toISOString(),
-      };
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-        setLastSavedAt(draft.savedAt);
-      } catch {
-        // localStorage penuh/diblokir — abaikan secara diam-diam, tidak kritikal
-      }
-    }, 500); // debounce ringan supaya tidak menulis di setiap ketikan
-
-    return () => clearTimeout(timeout);
-    }, [
-    currentStep,
-    biodata,
-    registrationType,
-    teamMembers,
-    selectedBidang,
-    selectedKategori,
-    selectedLowongan,
-    isDeclared,
-    isSubmitted,
-  ]);
-
-  const clearDraft = () => {
-    localStorage.removeItem(DRAFT_KEY);
-  };
-
-  // Cari nama asli Bidang & Kategori dari ID terpilih, untuk ditampilkan/payload
-  const selectedBidangName = bidangs.find((b) => b.id === selectedBidang)?.name || '';
-  const selectedKategoriName =
-    (kategoriByBidang[selectedBidang] || []).find((k) => k.id === selectedKategori)?.name || '';
-
-  const selectedLowonganData =
-  (lowonganByKategori[selectedKategori] || []).find(
-    (lowongan) => lowongan.id === selectedLowongan
-  );
-
-  const selectedLowonganName = selectedLowonganData?.project || '';
-  // Photo Upload Handler
-  const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validasi dasar foto profil: hanya gambar, maksimal 2MB (batas wajar untuk foto profil)
-    const isImage = file.type.startsWith('image/');
-    const maxPhotoBytes = 2 * 1024 * 1024;
-
-    if (!isImage) {
-      showWarningAlert('Format Foto Tidak Sesuai', 'Foto profil harus berupa file gambar (JPG/PNG).');
-      e.target.value = '';
-      return;
-    }
-
-    if (file.size > maxPhotoBytes) {
-      showWarningAlert(
-        'Ukuran Foto Terlalu Besar',
-        `Ukuran foto (${formatBytes(file.size)}) melebihi batas maksimal 2 MB. Silakan pilih foto lain.`
-      );
-      e.target.value = '';
-      return;
-    }
-
-    setBiodata({ ...biodata, photoUrl: URL.createObjectURL(file) });
-    showToast('success', 'Foto profil berhasil diunggah!');
-  };
-
-  // Add Member to Group
-  const handleAddMember = () => {
-    if (teamMembers.length >= 2) {
-      showWarningAlert(
-        'Batas Maksimal Anggota',
-        'Maksimal anggota kelompok adalah 3 orang (termasuk Ketua Tim).'
-      );
-      return;
-    }
-    const newId = teamMembers.length + 2;
-    setTeamMembers([...teamMembers, { id: newId, fullName: '', email: '', phone: '', nim: '' }]);
-    showToast('success', 'Anggota tim berhasil ditambahkan');
-  };
-
-  // Remove Member
-  const handleRemoveMember = async (id: number) => {
-    const confirmed = await showDeleteConfirmAlert({
-      title: 'Hapus Anggota Tim?',
-      text: 'Apakah Anda yakin ingin menghapus data anggota kelompok ini?',
-      confirmButtonText: 'Ya, Hapus Anggota',
-    });
-
-    if (confirmed) {
-      setTeamMembers(teamMembers.filter((m) => m.id !== id));
-      showToast('info', 'Anggota tim berhasil dihapus');
-    }
-  };
-
-  // Update Member
-  const handleUpdateMember = (id: number, field: keyof TeamMember, value: string) => {
-    setTeamMembers(teamMembers.map((m) => (m.id === id ? { ...m, [field]: value } : m)));
-  };
-
-  // Handle Document Upload — dengan validasi format & ukuran sebelum diterima
-  const handleDocumentUpload = (docId: number, e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const doc = documents.find((d) => d.id === docId);
-    if (!doc) return;
-
-    const validation = validateDocumentFile(file, doc);
-
-    if (!validation.valid) {
-      showWarningAlert(validation.errorTitle || 'Berkas Tidak Valid', validation.errorMessage || '');
-      e.target.value = ''; // reset input supaya user bisa pilih ulang file yang sama jika perlu
-      return;
-    }
-
-    setDocuments(
-      documents.map((d) =>
-        d.id === docId ? { ...d, file, fileName: file.name, status: 'Berhasil Upload' } : d
-      )
-    );
-
-    // Simpan ke IndexedDB supaya tidak hilang kalau halaman di-refresh
-    // sebelum submit final. Dijalankan async tanpa memblokir UI.
-    saveDocumentFileToDb(docId, file).catch(() => {
-      showWarningAlert(
-        'Berkas Tidak Tersimpan Permanen',
-        `Berkas "${doc.name}" berhasil diunggah untuk sesi ini, tetapi gagal disimpan untuk pemulihan otomatis. Jika halaman di-refresh sebelum submit, Anda perlu mengunggah ulang berkas ini.`
-      );
-    });
-
-    showToast('success', `Berkas ${file.name} siap dikirim saat submit`);
-  };
-
-  // Handle Document Delete
-  const handleDocumentDelete = async (docId: number) => {
-    const confirmed = await showDeleteConfirmAlert({
-      title: 'Hapus Berkas Pendaftaran?',
-      text: 'Apakah Anda yakin ingin menghapus berkas pendaftaran ini?',
-      confirmButtonText: 'Ya, Hapus Berkas',
-    });
-
-    if (confirmed) {
-      setDocuments(
-        documents.map((d) =>
-          d.id === docId ? { ...d, file: undefined, fileName: undefined, status: 'Belum Upload Berkas' } : d
-        )
-      );
-      deleteDocumentFileFromDb(docId).catch(() => {
-        // Kalau gagal hapus dari IndexedDB, tidak kritikal — cuma
-        // berpotensi ada file "yatim" tersimpan yang tidak lagi dipakai.
-      });
-      showToast('info', 'Berkas berhasil dihapus');
-    }
-  };
-
-  // Validasi kelengkapan berkas wajib — dipanggil sebelum submit final
-  const validateRequiredDocuments = (): boolean => {
-    const missingDocs = documents.filter((d) => d.required && !d.file);
-
-    if (missingDocs.length > 0) {
-      showWarningAlert(
-        'Berkas Wajib Belum Lengkap',
-        `Mohon unggah berkas berikut terlebih dahulu: ${missingDocs.map((d) => d.name).join(', ')}.`
-      );
-      return false;
-    }
-
-    return true;
-  };
-
-  // Handle Submit Final Pendaftaran
-  const handleSubmitFinal = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (!validateRequiredDocuments()) {
-      return;
-    }
-
-    if (!isDeclared) {
-      showWarningAlert(
-        'Pernyataan Belum Dicentang',
-        'Silakan centang pernyataan kebenaran data terlebih dahulu sebelum melakukan submit.'
-      );
-      return;
-    }
-
-    const confirmed = await showConfirmAlert({
-      title: 'Konfirmasi Kirim Pendaftaran',
-      text: 'Apakah Anda yakin seluruh data dan berkas pendaftaran Anda sudah benar dan lengkap? Data yang sudah dikirim tidak dapat diubah.',
-      confirmButtonText: 'Ya, Kirim Pendaftaran',
-      cancelButtonText: 'Batal',
-      icon: 'question',
-    });
-
-    if (!confirmed) return;
-
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append('applicantName', biodata.fullName);
-      formData.append('institution', biodata.university);
-      formData.append('major', biodata.major);
-      formData.append('nim', biodata.nim);
-      formData.append('phone', biodata.phone);
-      formData.append('email', biodata.email);
-      formData.append('address', biodata.address);
-      formData.append('projectTitle', biodata.projectTitle);
-      formData.append('skills', biodata.skills);
-      formData.append('tools', biodata.tools);
-      formData.append('startDate', biodata.startDate);
-      formData.append('endDate', biodata.endDate);
-      formData.append('fieldId', selectedBidang);
-      formData.append('fieldName', selectedBidangName);
-      formData.append('kategoriName', selectedKategoriName);
-      formData.append('lowonganId', selectedLowongan);
-      formData.append('registrationType', registrationType);
-      formData.append('notes', 'Pendaftaran magang berhasil dikirim dan siap diverifikasi.');
-
-      if (registrationType === 'Kelompok') {
-        teamMembers.forEach((m, i) => {
-          formData.append(`teamMembers[${i}][fullName]`, m.fullName);
-          formData.append(`teamMembers[${i}][email]`, m.email);
-          formData.append(`teamMembers[${i}][phone]`, m.phone);
-          formData.append(`teamMembers[${i}][nim]`, m.nim);
-        });
-      }
-
-      // agree atau tidak
-      formData.append('isDeclared', isDeclared ? '1' : '0');
-
-      documents.forEach((d, i) => {
-        if (d.file) {
-          const slug = DOCUMENT_TYPE_SLUG_MAP[d.id];
-          if (!slug) {
-            // Lewati dokumen yang belum punya padanan enum di backend,
-            // supaya tidak menyebabkan seluruh transaction gagal.
-            return;
-          }
-          formData.append(`documents[${i}][document_type]`, slug);
-          formData.append(`documents[${i}][file]`, d.file);
-        }
-      });
-
-      const result = onSubmitApplication
-        ? await onSubmitApplication(formData)
-        : await internalSubmitApplication(formData);
-
-      setSubmittedApp(result);
-      setIsSubmitted(true);
-      onSuccessSubmit?.(result);
-      
-      clearDraft(); // hapus draft setelah berhasil submit, form tidak perlu dipulihkan lagi
-      clearAllDocumentFilesFromDb().catch(() => {
-      });
-      showSuccessAlert(
-        'Pendaftaran Berhasil Dikirim!',
-        `Data pendaftaran magang Anda (${result.id}) telah tersimpan dan sedang dalam proses peninjauan oleh verifikator.`
-      );
-    } catch (err) {
-      // Tampilkan pesan error asli dari backend (mis. field mana yang
-      // tidak valid) kalau ada, daripada pesan generik yang membingungkan.
-      const message =
-        err instanceof ApiError && err.message
-          ? err.message
-          : 'Terjadi kendala saat menyimpan pendaftaran. Silakan coba kembali.';
-      showWarningAlert('Gagal Mengirim', message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (isSubmitted) {
+  if (form.isSubmitted) {
     return (
-     <SubmissionSuccess
-      submittedApp={submittedApp}
-      selectedBidang={selectedBidangName}
-      selectedKategori={selectedKategoriName}
-      selectedLowongan={selectedLowonganName}
-      registrationType={registrationType}
-      onSuccessSubmit={onSuccessSubmit}
-       onBackToForm={() => {
-          setIsSubmitted(false);
-          setCurrentStep(1);
+      <SubmissionSuccess
+        submittedApp={form.submittedApp}
+        selectedBidang={form.selectedBidangName}
+        selectedKategori={form.selectedKategoriName}
+        selectedLowongan={form.selectedLowonganName}
+        registrationType={form.registrationType}
+        onSuccessSubmit={onSuccessSubmit}
+        onBackToForm={() => {
+          form.setIsSubmitted(false);
+          form.setCurrentStep(1);
         }}
-    />
+      />
     );
   }
 
@@ -737,77 +49,78 @@ export function PendaftaranFormView({
         </p>
       </div>
 
-      <StepperHeader currentStep={currentStep} onStepClick={setCurrentStep} />
+      <StepperHeader currentStep={form.currentStep} onStepClick={form.setCurrentStep} />
 
-      {currentStep === 1 && (
+      {form.currentStep === 1 && (
         <StepBiodata
-          biodata={biodata}
-          setBiodata={setBiodata}
-          onPhotoUpload={handlePhotoUpload}
-          onNext={() => setCurrentStep(2)}
-          lastSavedAt={lastSavedAt}
+          biodata={form.biodata}
+          setBiodata={form.setBiodata}
+          onPhotoUpload={form.handlePhotoUpload}
+          onPhotoDelete={form.handlePhotoDelete}
+          onNext={() => form.setCurrentStep(2)}
+          lastSavedAt={form.lastSavedAt}
         />
       )}
 
-      {currentStep === 2 && (
+      {form.currentStep === 2 && (
         <StepTipePendaftaran
-          registrationType={registrationType}
-          setRegistrationType={setRegistrationType}
-          teamMembers={teamMembers}
-          biodata={biodata}
-          onAddMember={handleAddMember}
-          onRemoveMember={handleRemoveMember}
-          onUpdateMember={handleUpdateMember}
-          onBack={() => setCurrentStep(1)}
-          onNext={() => setCurrentStep(3)}
+          registrationType={form.registrationType}
+          setRegistrationType={form.setRegistrationType}
+          teamMembers={form.teamMembers}
+          biodata={form.biodata}
+          onAddMember={form.handleAddMember}
+          onRemoveMember={form.handleRemoveMember}
+          onUpdateMember={form.handleUpdateMember}
+          onBack={() => form.setCurrentStep(1)}
+          onNext={() => form.setCurrentStep(3)}
         />
       )}
 
-      {currentStep === 3 && (
-       <StepBidangKategori
-          bidangOptions={bidangs}
-          kategoriByBidang={kategoriByBidang}
-          lowonganByKategori={lowonganByKategori}
-          selectedBidang={selectedBidang}
-          setSelectedBidang={setSelectedBidang}
-          selectedKategori={selectedKategori}
-          setSelectedKategori={setSelectedKategori}
-          selectedLowongan={selectedLowongan}
-          setSelectedLowongan={setSelectedLowongan}
-          onBack={() => setCurrentStep(2)}
-          onNext={() => setCurrentStep(4)}
+      {form.currentStep === 3 && (
+        <StepBidangKategori
+          bidangOptions={form.bidangs}
+          kategoriByBidang={form.kategoriByBidang}
+          lowonganByKategori={form.lowonganByKategori}
+          selectedBidang={form.selectedBidang}
+          setSelectedBidang={form.setSelectedBidang}
+          selectedKategori={form.selectedKategori}
+          setSelectedKategori={form.setSelectedKategori}
+          selectedLowongan={form.selectedLowongan}
+          setSelectedLowongan={form.setSelectedLowongan}
+          onBack={() => form.setCurrentStep(2)}
+          onNext={() => form.setCurrentStep(4)}
         />
       )}
 
-      {currentStep === 4 && (
+      {form.currentStep === 4 && (
         <StepBerkas
-          documents={documents}
-          onUpload={handleDocumentUpload}
-          onDelete={handleDocumentDelete}
-          onBack={() => setCurrentStep(3)}
+          documents={form.documents}
+          onUpload={form.handleDocumentUpload}
+          onDelete={form.handleDocumentDelete}
+          onBack={() => form.setCurrentStep(3)}
           onNext={() => {
-            if (validateRequiredDocuments()) {
-              setCurrentStep(5);
+            if (form.validateRequiredDocuments()) {
+              form.setCurrentStep(5);
             }
           }}
         />
       )}
 
-      {currentStep === 5 && (
-      <StepReviewSubmit
-        biodata={biodata}
-        registrationType={registrationType}
-        teamMembers={teamMembers}
-        selectedBidang={selectedBidangName}
-        selectedKategori={selectedKategoriName}
-        selectedLowongan={selectedLowonganName}
-        documents={documents}
-        isDeclared={isDeclared}
-        setIsDeclared={setIsDeclared}
-        onEditStep={setCurrentStep}
-        onBack={() => setCurrentStep(4)}
-        onSubmit={handleSubmitFinal}
-      />
+      {form.currentStep === 5 && (
+        <StepReviewSubmit
+          biodata={form.biodata}
+          registrationType={form.registrationType}
+          teamMembers={form.teamMembers}
+          selectedBidang={form.selectedBidangName}
+          selectedKategori={form.selectedKategoriName}
+          selectedLowongan={form.selectedLowonganName}
+          documents={form.documents}
+          isDeclared={form.isDeclared}
+          setIsDeclared={form.setIsDeclared}
+          onEditStep={form.setCurrentStep}
+          onBack={() => form.setCurrentStep(4)}
+          onSubmit={form.handleSubmitFinal}
+        />
       )}
     </div>
   );

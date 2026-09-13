@@ -1,4 +1,4 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useState } from 'react';
 import { BiodataState } from '../types';
 import { showWarningAlert } from '../../../utils/swal';
 
@@ -6,11 +6,21 @@ interface StepBiodataProps {
   biodata: BiodataState;
   setBiodata: (biodata: BiodataState) => void;
   onPhotoUpload: (e: ChangeEvent<HTMLInputElement>) => void;
+  onPhotoDelete: () => void;
   onNext: () => void;
   lastSavedAt: string | null;
 }
 
-export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSavedAt }: StepBiodataProps) {
+export function StepBiodata({
+  biodata,
+  setBiodata,
+  onPhotoUpload,
+  onPhotoDelete,
+  onNext,
+  lastSavedAt,
+}: StepBiodataProps) {
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+
   const handleNext = () => {
     // Hanya field yang ditandai wajib (*) di UI yang divalidasi
     const requiredFields: { key: keyof BiodataState; label: string }[] = [
@@ -75,9 +85,22 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSa
     onNext();
   };
 
+  const handleDeletePhoto = () => {
+    onPhotoDelete();
+    setShowPhotoPreview(false);
+  };
+
+  // Reset input value right after it fires — pola yang sama dipakai di
+  // StepBerkas — supaya memilih file yang sama persis dua kali (mis.
+  // setelah ganti/hapus foto) tetap memicu onChange.
+  const handlePhotoUploadChange = (e: ChangeEvent<HTMLInputElement>) => {
+    onPhotoUpload(e);
+    e.target.value = '';
+  };
+
   const todayString = new Date().toISOString().split('T')[0];
 
-   const formatSavedAt = (iso: string | null) => {
+  const formatSavedAt = (iso: string | null) => {
     if (!iso) return 'Belum ada draft tersimpan';
     const date = new Date(iso);
     const formatted = new Intl.DateTimeFormat('id-ID', {
@@ -93,6 +116,11 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSa
   };
   const savedAtText = formatSavedAt(lastSavedAt);
 
+  // Remount key: berubah setiap kali status foto berubah (bukan cuma
+  // photoUrl-nya), mengikuti pola inputKey di StepBerkas — memaksa
+  // <input type="file"> untuk fully reset setiap upload/ganti/hapus.
+  const photoInputKey = `photo-${biodata.photoUrl ? 'filled' : 'empty'}-${biodata.photoFileName ?? 'none'}`;
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-8 shadow-2xs space-y-8">
       {/* Header Bar */}
@@ -107,6 +135,7 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSa
         {/* Foto Profil */}
         <div className="lg:col-span-4 flex flex-col items-center text-center space-y-3">
           <span className="text-xs font-bold text-slate-700 w-full text-left">Foto Profil</span>
+
           <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center relative overflow-hidden shadow-inner">
             {biodata.photoUrl ? (
               <img src={biodata.photoUrl} alt="Foto Profil" className="w-full h-full object-cover" />
@@ -114,13 +143,65 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSa
               <span className="material-symbols-outlined text-4xl text-slate-400">photo_camera</span>
             )}
           </div>
-          <label className="inline-block cursor-pointer">
-            <input type="file" accept="image/*" onChange={onPhotoUpload} className="hidden" />
-            <span className="px-5 py-2 rounded-xl bg-[#1f877c] hover:bg-[#196e65] text-white font-bold text-xs shadow-2xs transition-all inline-block">
-              Upload Foto
-            </span>
-          </label>
-          <span className="text-[10px] text-slate-400 font-medium">Format JPG/PNG, maks. 200KB</span>
+
+          {biodata.photoUrl ? (
+            <>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                Berhasil Upload
+              </span>
+              {biodata.photoFileName && (
+                <span className="text-[10px] text-slate-400 font-mono truncate max-w-full">
+                  {biodata.photoFileName}
+                </span>
+              )}
+
+              <div className="flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoPreview(true)}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-emerald-700 hover:bg-[#E6F7F3] cursor-pointer"
+                  title="Lihat Foto"
+                >
+                  <span className="material-symbols-outlined text-base">visibility</span>
+                </button>
+                <label className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-emerald-700 hover:bg-[#E6F7F3] cursor-pointer inline-block">
+                  <input
+                    key={photoInputKey}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUploadChange}
+                    className="hidden"
+                  />
+                  <span className="material-symbols-outlined text-base block" title="Ganti Foto">
+                    edit
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleDeletePhoto}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-400 text-rose-500 hover:bg-rose-50 cursor-pointer"
+                  title="Hapus Foto"
+                >
+                  <span className="material-symbols-outlined text-base">delete</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <label className="inline-block cursor-pointer">
+              <input
+                key={photoInputKey}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUploadChange}
+                className="hidden"
+              />
+              <span className="px-5 py-2 rounded-xl bg-[#1f877c] hover:bg-[#196e65] text-white font-bold text-xs shadow-2xs transition-all inline-block">
+                Upload Foto
+              </span>
+            </label>
+          )}
+
+          <span className="text-[10px] text-slate-400 font-medium">Format JPG/PNG, maks. 2 MB</span>
         </div>
 
         {/* Inputs Personal */}
@@ -318,6 +399,37 @@ export function StepBiodata({ biodata, setBiodata, onPhotoUpload, onNext, lastSa
           Simpan & Lanjutkan
         </button>
       </div>
+
+      {showPhotoPreview && biodata.photoUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+          onClick={() => setShowPhotoPreview(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <p className="text-sm font-bold text-slate-900">Foto Profil</p>
+              <button
+                type="button"
+                onClick={() => setShowPhotoPreview(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+                title="Tutup"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+            <div className="p-4 bg-slate-50 flex items-center justify-center">
+              <img
+                src={biodata.photoUrl}
+                alt="Foto Profil"
+                className="max-w-full max-h-[60vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
