@@ -1,4 +1,4 @@
-import { DocumentFile } from '../types';
+import { DocumentFile } from '../../types';
 
 // Memetakan id dokumen (state internal form) ke slug document_type yang
 // dikenali backend (ApplicationController::store).

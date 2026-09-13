@@ -1,5 +1,5 @@
-import { User } from '../../types/auth';
-import { ApplicationStatus } from '../../types/internship';
+import { User } from '../../../types/auth';
+import { ApplicationStatus } from '../../../types/internship';
 import { usePendaftaranForm } from './hooks/usePendaftaranForm';
 import { StepperHeader } from './steps/StepperHeader';
 import { StepBiodata } from './steps/StepBiodata';

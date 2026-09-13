@@ -3,7 +3,7 @@ import { User } from '../../types/auth';
 import { ApplicationStatus } from '../../types/internship';
 import { RiwayatMagangView } from '../../components/pendaftar/RiwayatMagangView';
 import { ProfileView } from '../../components/pendaftar/ProfileView';
-import { PendaftaranFormView } from '../../components/pendaftar/PendaftaranFormView';
+import { PendaftaranFormView } from '../../components/pendaftar/pendaftaran/PendaftaranFormView';
 import { ReviewHeader } from '../../components/pendaftar/layout/ReviewHeader';
 import { ReviewSidebar, ReviewTab } from '../../components/pendaftar/layout/ReviewSidebar';
 import { HelpChatWidget } from '../../components/pendaftar/layout/HelpChatWidget';

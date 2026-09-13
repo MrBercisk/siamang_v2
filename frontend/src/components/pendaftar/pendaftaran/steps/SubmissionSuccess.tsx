@@ -1,5 +1,5 @@
-import { ApplicationStatus } from '../../../types/internship';
-import { RegistrationType } from '../types';
+import { ApplicationStatus } from '../../../../types/internship';
+import { RegistrationType } from '../../types';
 
 interface SubmissionSuccessProps {
   submittedApp: ApplicationStatus | null;

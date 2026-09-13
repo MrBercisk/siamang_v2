@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
-import { DocumentFile } from '../types';
-import { showWarningAlert } from '../../../utils/swal';
+import { DocumentFile } from '../../types';
+import { showWarningAlert } from '../../../../utils/swal';
 
 interface StepBerkasProps {
   documents: DocumentFile[];

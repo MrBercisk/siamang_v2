@@ -1,4 +1,4 @@
-import { DocumentFile } from '../types';
+import { DocumentFile } from '../../types';
 
 // Batas keamanan tambahan sesuai validasi backend (file max:20480 KB = 20MB)
 export const BACKEND_MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;

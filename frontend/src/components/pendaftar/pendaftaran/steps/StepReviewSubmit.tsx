@@ -1,6 +1,6 @@
 import { FormEvent } from 'react';
-import { BiodataState, DocumentFile, RegistrationType, TeamMember } from '../types';
-import { showToast, showWarningAlert } from '../../../utils/swal';
+import { BiodataState, DocumentFile, RegistrationType, TeamMember } from '../../types';
+import { showToast, showWarningAlert } from '../../../../utils/swal';
 
 interface StepReviewSubmitProps {
   biodata: BiodataState;

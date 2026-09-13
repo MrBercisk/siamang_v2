@@ -2,9 +2,9 @@ import type {
   BidangOption,
   KategoriOption,
   LowonganOption,
-} from '../../../hooks/useInternshipData';
+} from '../../../../hooks/useInternshipData';
 
-import { showWarningAlert } from '../../../utils/swal';
+import { showWarningAlert } from '../../../../utils/swal';
 
 interface StepBidangKategoriProps {
   selectedBidang: string;

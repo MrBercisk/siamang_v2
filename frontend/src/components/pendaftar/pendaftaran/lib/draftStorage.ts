@@ -1,5 +1,5 @@
-import { User } from '../../../types/auth';
-import { BiodataState, RegistrationType, TeamMember } from '../types';
+import { User } from '../../../../types/auth';
+import { BiodataState, RegistrationType, TeamMember } from '../../types';
 
 export const DRAFT_KEY = 'si_amang_pendaftaran_draft';
 

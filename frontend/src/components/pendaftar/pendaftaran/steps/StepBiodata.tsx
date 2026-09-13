@@ -1,6 +1,6 @@
 import { ChangeEvent, useState } from 'react';
-import { BiodataState } from '../types';
-import { showWarningAlert } from '../../../utils/swal';
+import { BiodataState } from '../../types';
+import { showWarningAlert } from '../../../../utils/swal';
 
 interface StepBiodataProps {
   biodata: BiodataState;

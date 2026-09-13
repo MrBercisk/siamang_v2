@@ -1,16 +1,16 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from 'react';
-import { User } from '../../../types/auth';
-import { ApplicationStatus } from '../../../types/internship';
-import { useInternshipData } from '../../../hooks/useInternshipData';
-import { ApiError } from '../../../lib/api';
+import { User } from '../../../../types/auth';
+import { ApplicationStatus } from '../../../../types/internship';
+import { useInternshipData } from '../../../../hooks/useInternshipData';
+import { ApiError } from '../../../../lib/api';
 import {
   showSuccessAlert,
   showWarningAlert,
   showConfirmAlert,
   showDeleteConfirmAlert,
   showToast,
-} from '../../../utils/swal';
-import { BiodataState, DocumentFile, RegistrationType, TeamMember } from '../types';
+} from '../../../../utils/swal';
+import { BiodataState, DocumentFile, RegistrationType, TeamMember } from '../../types';
 import {
   PROFILE_PHOTO_KEY,
   saveDocumentFileToDb,

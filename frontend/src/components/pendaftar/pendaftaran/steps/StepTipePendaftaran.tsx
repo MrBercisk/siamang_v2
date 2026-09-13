@@ -1,5 +1,5 @@
-import { BiodataState, RegistrationType, TeamMember } from '../types';
-import { showWarningAlert } from '../../../utils/swal';
+import { BiodataState, RegistrationType, TeamMember } from '../../types';
+import { showWarningAlert } from '../../../../utils/swal';
 
 interface StepTipePendaftaranProps {
   registrationType: RegistrationType;

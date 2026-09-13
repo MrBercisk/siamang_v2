@@ -1,4 +1,4 @@
-import { STEPS_LIST } from '../types';
+import { STEPS_LIST } from '../../types';
 
 interface StepperHeaderProps {
   currentStep: number;
