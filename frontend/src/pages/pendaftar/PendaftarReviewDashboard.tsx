@@ -24,6 +24,8 @@ export function PendaftarReviewDashboard({
 }: PendaftarReviewDashboardProps) {
   const [activeTab, setActiveTab] = useState<ReviewTab>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentApplications, setCurrentApplications] =
+    useState<ApplicationStatus[]>(applications);
 
   const handleLogout = () => {
     if (onLogout) onLogout();
@@ -52,18 +54,21 @@ export function PendaftarReviewDashboard({
           {activeTab === 'dashboard' && (
             <ReviewDashboardTab
               user={user}
-              applications={applications}
+              applications={currentApplications}
               onGoToPendaftaran={() => setActiveTab('pendaftaran')}
             />
           )}
           {activeTab === 'pendaftaran' && (
-            <PendaftaranFormView
-              user={user}
-              onSuccessSubmit={() => setActiveTab('dashboard')}
-            />
+         <PendaftaranFormView
+            user={user}
+            onSuccessSubmit={(result) => {
+              setCurrentApplications((prev) => [result, ...prev]);
+              setActiveTab('dashboard');
+            }}
+          />
           )}
           {activeTab === 'riwayat' && (
-            <RiwayatMagangView applications={applications} />
+            <RiwayatMagangView applications={currentApplications} />
           )}
           {activeTab === 'profile' && <ProfileView user={user} />}
         </main>

@@ -1,4 +1,9 @@
-import type { BidangOption, KategoriOption } from '../../../hooks/useInternshipData';
+import type {
+  BidangOption,
+  KategoriOption,
+  LowonganOption,
+} from '../../../hooks/useInternshipData';
+
 import { showWarningAlert } from '../../../utils/swal';
 
 interface StepBidangKategoriProps {
@@ -6,6 +11,9 @@ interface StepBidangKategoriProps {
   setSelectedBidang: (value: string) => void;
   selectedKategori: string;
   setSelectedKategori: (value: string) => void;
+  selectedLowongan: string;
+  setSelectedLowongan: (value: string) => void;
+  lowonganByKategori: Record<string, LowonganOption[]>;
   bidangOptions: BidangOption[];
   kategoriByBidang: Record<string, KategoriOption[]>;
   onBack: () => void;
@@ -17,16 +25,25 @@ export function StepBidangKategori({
   setSelectedBidang,
   selectedKategori,
   setSelectedKategori,
+  selectedLowongan,
+  setSelectedLowongan,
+  lowonganByKategori,
   bidangOptions,
   kategoriByBidang,
   onBack,
   onNext,
 }: StepBidangKategoriProps) {
   const kategoriOptions = kategoriByBidang[selectedBidang] || [];
+  const lowonganOptions = lowonganByKategori[selectedKategori] || [];
 
   const handleBidangChange = (value: string) => {
     setSelectedBidang(value);
-    setSelectedKategori(''); // reset kategori setiap kali bidang berganti
+    setSelectedKategori('');
+    setSelectedLowongan('');
+  };
+  const handleKategoriChange = (value: string) => {
+    setSelectedKategori(value);
+    setSelectedLowongan('');
   };
 
   const handleNext = () => {
@@ -36,6 +53,13 @@ export function StepBidangKategori({
     }
     if (!selectedKategori) {
       showWarningAlert('Kategori Belum Dipilih', 'Silakan pilih kategori terlebih dahulu sebelum melanjutkan.');
+      return;
+    }
+    if (!selectedLowongan) {
+      showWarningAlert(
+        'Lowongan Belum Dipilih',
+        'Silakan pilih lowongan magang terlebih dahulu sebelum melanjutkan.'
+      );
       return;
     }
     onNext();
@@ -74,11 +98,11 @@ export function StepBidangKategori({
             Pilih Kategori <span className="text-rose-500">*</span>
           </label>
           <select
-            value={selectedKategori}
-            onChange={(e) => setSelectedKategori(e.target.value)}
-            disabled={!selectedBidang}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none bg-white font-semibold text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
-          >
+              value={selectedKategori}
+              onChange={(e) => handleKategoriChange(e.target.value)}
+              disabled={!selectedBidang}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none bg-white font-semibold text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+            >
             <option value="" disabled>
               {selectedBidang ? 'Pilih kategori' : 'Pilih bidang terlebih dahulu'}
             </option>
@@ -89,6 +113,44 @@ export function StepBidangKategori({
             ))}
           </select>
         </div>
+        <div className="sm:col-span-2">
+            <label className="block font-bold text-slate-700 mb-1">
+              Pilih Lowongan <span className="text-rose-500">*</span>
+            </label>
+
+            <select
+              value={selectedLowongan}
+              onChange={(e) => setSelectedLowongan(e.target.value)}
+              disabled={!selectedKategori}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none bg-white font-semibold text-slate-800 disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="" disabled>
+                {!selectedBidang
+                  ? 'Pilih bidang terlebih dahulu'
+                  : !selectedKategori
+                    ? 'Pilih kategori terlebih dahulu'
+                    : lowonganOptions.length === 0
+                      ? 'Tidak ada lowongan tersedia'
+                      : 'Pilih lowongan'}
+              </option>
+
+              {lowonganOptions.map((lowongan) => {
+                const remaining =
+                  lowongan.kuota !== undefined && lowongan.filled !== undefined
+                    ? Math.max(lowongan.kuota - lowongan.filled, 0)
+                    : null;
+
+                return (
+                  <option key={lowongan.id} value={lowongan.id}>
+                    {lowongan.project}
+                    {remaining !== null
+                      ? ` — ${remaining} kuota tersedia`
+                      : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
       </div>
 
       {/* Info Box */}

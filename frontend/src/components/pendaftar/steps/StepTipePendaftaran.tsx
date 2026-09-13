@@ -13,6 +13,28 @@ interface StepTipePendaftaranProps {
   onNext: () => void;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface RequiredFieldRule {
+  key: keyof TeamMember;
+  label: string;
+  // Validasi tambahan di luar "tidak boleh kosong". Kembalikan true kalau valid.
+  validate?: (value: string) => boolean;
+  invalidMessage?: string;
+}
+
+const REQUIRED_FIELDS: RequiredFieldRule[] = [
+  { key: 'fullName', label: 'Nama Lengkap' },
+  {
+    key: 'email',
+    label: 'Email',
+    validate: (value) => EMAIL_REGEX.test(value.trim()),
+    invalidMessage: 'formatnya tidak valid',
+  },
+  { key: 'phone', label: 'No. Handphone' },
+  { key: 'nim', label: 'NIM' },
+];
+
 export function StepTipePendaftaran({
   registrationType,
   setRegistrationType,
@@ -26,29 +48,36 @@ export function StepTipePendaftaran({
 }: StepTipePendaftaranProps) {
   const handleNext = () => {
     if (registrationType === 'Kelompok') {
+      // Aturan: kelompok minimal 2 orang total (Ketua Tim + minimal 1 anggota),
+      // jadi array teamMembers (anggota di luar Ketua) minimal berisi 1 orang.
       if (teamMembers.length < 1) {
         showWarningAlert(
           'Anggota Tim Belum Cukup',
-          'Kelompok minimal harus terdiri dari 2 anggota (di luar Ketua Tim). Silakan tambahkan anggota terlebih dahulu.'
+          'Kelompok minimal harus terdiri dari 2 orang termasuk Ketua Tim. Silakan tambahkan minimal 1 anggota terlebih dahulu.'
         );
         return;
       }
 
-      const requiredFields: { key: keyof TeamMember; label: string }[] = [
-        { key: 'fullName', label: 'Nama Lengkap' },
-        { key: 'email', label: 'Email' },
-        { key: 'phone', label: 'No. Handphone' },
-        { key: 'nim', label: 'NIM' },
-      ];
-
       for (let i = 0; i < teamMembers.length; i += 1) {
         const member = teamMembers[i];
-        const missing = requiredFields.filter((field) => !member[field.key]?.toString().trim());
 
+        const missing = REQUIRED_FIELDS.filter((field) => !member[field.key]?.toString().trim());
         if (missing.length > 0) {
           showWarningAlert(
             'Data Anggota Belum Lengkap',
             `Mohon lengkapi data Anggota Tim ${i + 2}: ${missing.map((f) => f.label).join(', ')}.`
+          );
+          return;
+        }
+
+        const invalid = REQUIRED_FIELDS.filter(
+          (field) => field.validate && !field.validate(member[field.key]?.toString() ?? '')
+        );
+        if (invalid.length > 0) {
+          const first = invalid[0];
+          showWarningAlert(
+            'Data Anggota Tidak Valid',
+            `${first.label} Anggota Tim ${i + 2} ${first.invalidMessage ?? 'tidak valid'}. Mohon periksa kembali.`
           );
           return;
         }
@@ -185,76 +214,86 @@ export function StepTipePendaftaran({
           </div>
 
           {/* Anggota List */}
-          {teamMembers.map((member, idx) => (
-            <div key={member.id} className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <span className="material-symbols-outlined text-slate-500 text-lg">group</span>
-                  <span>Anggota Tim {idx + 2}</span>
+          {teamMembers.map((member, idx) => {
+            const emailValue = member.email?.toString().trim() ?? '';
+            const isEmailInvalid = emailValue.length > 0 && !EMAIL_REGEX.test(emailValue);
+
+            return (
+              <div key={member.id} className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <span className="material-symbols-outlined text-slate-500 text-lg">group</span>
+                    <span>Anggota Tim {idx + 2}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onRemoveMember(member.id)}
+                    className="px-3 py-1 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <span>Hapus Anggota</span>
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onRemoveMember(member.id)}
-                  className="px-3 py-1 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
-                >
-                  <span>Hapus Anggota</span>
-                  <span className="material-symbols-outlined text-sm">delete</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Nama Lengkap <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Masukkan nama lengkap"
-                    value={member.fullName}
-                    onChange={(e) => onUpdateMember(member.id, 'fullName', e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Email <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Masukkan email"
-                    value={member.email}
-                    onChange={(e) => onUpdateMember(member.id, 'email', e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    No. Handphone <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Masukkan no handphone"
-                    value={member.phone}
-                    onChange={(e) => onUpdateMember(member.id, 'phone', e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
-                  />
-                </div>
-                <div className="sm:col-span-3">
-                  <label className="block font-bold text-slate-700 mb-1">
-                    NIM (Nomor Induk Mahasiswa) <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Masukkan NIM"
-                    value={member.nim}
-                    onChange={(e) => onUpdateMember(member.id, 'nim', e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nama Lengkap <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Masukkan nama lengkap"
+                      value={member.fullName}
+                      onChange={(e) => onUpdateMember(member.id, 'fullName', e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Email <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="Masukkan email"
+                      value={member.email}
+                      onChange={(e) => onUpdateMember(member.id, 'email', e.target.value)}
+                      className={`w-full px-3.5 py-2 rounded-xl border outline-none ${
+                        isEmailInvalid ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200'
+                      }`}
+                    />
+                    {isEmailInvalid && (
+                      <p className="text-[11px] text-rose-500 mt-1">Format email tidak valid.</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      No. Handphone <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Masukkan no handphone"
+                      value={member.phone}
+                      onChange={(e) => onUpdateMember(member.id, 'phone', e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className="block font-bold text-slate-700 mb-1">
+                      NIM (Nomor Induk Mahasiswa) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Masukkan NIM"
+                      value={member.nim}
+                      onChange={(e) => onUpdateMember(member.id, 'nim', e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 outline-none"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {teamMembers.length < 2 && (
             <button

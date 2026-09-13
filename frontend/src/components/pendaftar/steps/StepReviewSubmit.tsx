@@ -8,6 +8,7 @@ interface StepReviewSubmitProps {
   teamMembers: TeamMember[];
   selectedBidang: string;
   selectedKategori: string;
+  selectedLowongan: string;
   documents: DocumentFile[];
   isDeclared: boolean;
   setIsDeclared: (value: boolean) => void;
@@ -22,6 +23,7 @@ export function StepReviewSubmit({
   teamMembers,
   selectedBidang,
   selectedKategori,
+  selectedLowongan,
   documents,
   isDeclared,
   setIsDeclared,
@@ -176,14 +178,32 @@ export function StepReviewSubmit({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-slate-400 font-bold block mb-1">Bidang yang dipilih</span>
-              <span className="font-bold text-slate-900 text-sm">{selectedBidang}</span>
+              <span className="text-slate-400 font-bold block mb-1">
+                Bidang yang dipilih
+              </span>
+              <span className="font-bold text-slate-900 text-sm">
+                {selectedBidang}
+              </span>
             </div>
+
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <span className="text-slate-400 font-bold block mb-1">Kategori yang dipilih</span>
-              <span className="font-bold text-slate-900 text-sm">{selectedKategori}</span>
+              <span className="text-slate-400 font-bold block mb-1">
+                Kategori yang dipilih
+              </span>
+              <span className="font-bold text-slate-900 text-sm">
+                {selectedKategori}
+              </span>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <span className="text-slate-400 font-bold block mb-1">
+                Lowongan yang dipilih
+              </span>
+              <span className="font-bold text-slate-900 text-sm">
+                {selectedLowongan}
+              </span>
             </div>
           </div>
         </div>

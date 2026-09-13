@@ -24,7 +24,9 @@ class Lowongan extends Model
 
     protected function casts(): array
     {
-        return [
+         return [
+            'kuota' => 'integer',
+            'filled' => 'integer',
             'is_active' => 'boolean',
         ];
     }

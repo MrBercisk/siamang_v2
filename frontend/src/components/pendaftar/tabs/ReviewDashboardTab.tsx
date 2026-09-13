@@ -108,6 +108,7 @@ export function ReviewDashboardTab({
 
   const displayName = user.name || 'Pengguna';
   const latestApp = applications.length > 0 ? applications[0] : null;
+  
 
   return (
     <div className="space-y-6 animate-in fade-in">

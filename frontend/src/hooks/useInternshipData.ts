@@ -22,8 +22,12 @@ interface BackendKategori {
 
 interface BackendLowongan {
   id: number;
+  periode_id: number;
   kategori_id: number;
   project?: string | null;
+  kuota?: number | null;
+  filled?: number | null;
+  is_active?: boolean;
 }
 
 interface BackendPeriode {
@@ -34,6 +38,13 @@ interface BackendPeriode {
   duration_info?: string | null;
   system_type?: string | null;
   is_active: boolean;
+}
+interface BackendTeamMember {
+  id: number;
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  nim?: string | null;
 }
 
 interface BackendApplication {
@@ -53,6 +64,8 @@ interface BackendApplication {
   fieldId: string | number;
   fieldName?: string | null;
   kategoriName?: string | null;
+  lowonganId?: string | number;
+  lowongan?: string | null;
   registrationType?: 'Individu' | 'Kelompok';
   status: ApplicationStatus['status'];
   submittedAt?: string | null;
@@ -60,6 +73,7 @@ interface BackendApplication {
   periode?: string | null;
   periodeStart?: string | null;
   periodeEnd?: string | null;
+  teamMembers?: BackendTeamMember[];
 }
 
 interface ApiItem<T> {
@@ -77,6 +91,15 @@ export interface KategoriOption {
   name: string;
   quota?: number;
   description?: string;
+}
+
+export interface LowonganOption {
+  id: string;
+  kategoriId: string;
+  project: string;
+  kuota?: number;
+  filled?: number;
+  isActive: boolean;
 }
 
 function mapApplication(application: BackendApplication): ApplicationStatus {
@@ -97,6 +120,10 @@ function mapApplication(application: BackendApplication): ApplicationStatus {
     fieldId: String(application.fieldId),
     fieldName: application.fieldName || 'Bidang belum ditentukan',
     kategoriName: application.kategoriName || undefined,
+    lowonganId: application.lowonganId
+    ? String(application.lowonganId)
+    : undefined,
+    lowongan: application.lowongan || undefined,
     registrationType: application.registrationType,
     status: application.status,
     submittedAt: application.submittedAt || '-',
@@ -104,6 +131,13 @@ function mapApplication(application: BackendApplication): ApplicationStatus {
     periode: application.periode || undefined,
     periodeStart: application.periodeStart || undefined,
     periodeEnd: application.periodeEnd || undefined,
+    teamMembers: application.teamMembers?.map((m) => ({
+      id: m.id,
+      fullName: m.fullName,
+      email: m.email || '',
+      phone: m.phone || '',
+      nim: m.nim || '',
+    })),
   };
 }
 
@@ -113,6 +147,9 @@ export function useInternshipData(isAuthenticated = false) {
   const [requirements, setRequirements] = useState<ApplicationRequirement[]>(DEFAULT_REQUIREMENTS);
   const [bidangs, setBidangs] = useState<BidangOption[]>([]);
   const [kategoriByBidang, setKategoriByBidang] = useState<Record<string, KategoriOption[]>>({});
+  const [lowonganByKategori, setLowonganByKategori] = useState<
+    Record<string, LowonganOption[]>
+  >({});
   const [applications, setApplications] = useState<ApplicationStatus[]>(() => {
     const saved = localStorage.getItem('si_amang_applications');
     if (saved) {
@@ -167,6 +204,28 @@ export function useInternshipData(isAuthenticated = false) {
           });
         });
         setKategoriByBidang(grouped);
+        const groupedLowongan: Record<string, LowonganOption[]> = {};
+
+          lowonganResponse.data
+            .filter((lowongan) => lowongan.is_active !== false)
+            .forEach((lowongan) => {
+              const kategoriId = String(lowongan.kategori_id);
+
+              if (!groupedLowongan[kategoriId]) {
+                groupedLowongan[kategoriId] = [];
+              }
+
+              groupedLowongan[kategoriId].push({
+                id: String(lowongan.id),
+                kategoriId,
+                project: lowongan.project || 'Lowongan magang',
+                kuota: lowongan.kuota ?? undefined,
+                filled: lowongan.filled ?? undefined,
+                isActive: lowongan.is_active !== false,
+              });
+            });
+
+          setLowonganByKategori(groupedLowongan);
 
         // Tetap pertahankan `categories` (flat) untuk konsumen lama yang menampilkan daftar kategori + lowongan
         setCategories(kategoriResponse.data.map((kategori) => ({
@@ -239,6 +298,7 @@ export function useInternshipData(isAuthenticated = false) {
     applications,
     bidangs,
     kategoriByBidang,
+    lowonganByKategori,
     loading,
     error,
     refreshData: fetchBackendData,

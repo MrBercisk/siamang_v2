@@ -2,6 +2,7 @@ import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { User } from '../../types/auth';
 import { ApplicationStatus } from '../../types/internship';
 import { useInternshipData } from '../../hooks/useInternshipData';
+import { ApiError } from '../../lib/api';
 import {
   showSuccessAlert,
   showWarningAlert,
@@ -21,7 +22,7 @@ import { SubmissionSuccess } from './steps/SubmissionSuccess';
 interface PendaftaranFormViewProps {
   user: User;
   onSubmitApplication?: (data: any) => Promise<ApplicationStatus>;
-  onSuccessSubmit?: (application?: ApplicationStatus) => void;
+  onSuccessSubmit?: (application: ApplicationStatus) => void;
 }
 
 const DRAFT_KEY = 'si_amang_pendaftaran_draft';
@@ -36,6 +37,7 @@ interface DraftState {
   teamMembers: TeamMember[];
   selectedBidang: string;
   selectedKategori: string;
+  selectedLowongan: string;
   isDeclared: boolean;
   savedAt: string;
 }
@@ -67,6 +69,90 @@ function getDefaultBiodata(user: User): BiodataState {
     startDate: '',
     endDate: '',
   };
+}
+
+// ── Persistensi Berkas via IndexedDB ────────────────────────────────
+//
+// localStorage tidak bisa dipakai untuk menyimpan objek File/Blob (hanya
+// string, dan kapasitasnya cuma ~5MB — tidak cukup untuk video 20MB).
+// IndexedDB bisa menyimpan File asli tanpa perlu diubah ke base64, dan
+// kapasitasnya jauh lebih besar. Ini dipakai supaya berkas yang sudah
+// diupload tidak hilang saat halaman di-refresh sebelum submit final.
+
+const FILES_DB_NAME = 'si_amang_files_db';
+const FILES_STORE_NAME = 'documents';
+const FILES_DB_VERSION = 1;
+
+function openFilesDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB tidak tersedia di browser ini.'));
+      return;
+    }
+
+    const request = indexedDB.open(FILES_DB_NAME, FILES_DB_VERSION);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(FILES_STORE_NAME)) {
+        db.createObjectStore(FILES_STORE_NAME);
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveDocumentFileToDb(docId: number, file: File): Promise<void> {
+  const db = await openFilesDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FILES_STORE_NAME, 'readwrite');
+    tx.objectStore(FILES_STORE_NAME).put(file, docId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function deleteDocumentFileFromDb(docId: number): Promise<void> {
+  const db = await openFilesDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FILES_STORE_NAME, 'readwrite');
+    tx.objectStore(FILES_STORE_NAME).delete(docId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function getAllDocumentFilesFromDb(): Promise<Record<number, File>> {
+  const db = await openFilesDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FILES_STORE_NAME, 'readonly');
+    const store = tx.objectStore(FILES_STORE_NAME);
+    const result: Record<number, File> = {};
+    const cursorRequest = store.openCursor();
+
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (cursor) {
+        result[Number(cursor.key)] = cursor.value as File;
+        cursor.continue();
+      } else {
+        resolve(result);
+      }
+    };
+    cursorRequest.onerror = () => reject(cursorRequest.error);
+  });
+}
+
+async function clearAllDocumentFilesFromDb(): Promise<void> {
+  const db = await openFilesDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FILES_STORE_NAME, 'readwrite');
+    tx.objectStore(FILES_STORE_NAME).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
 // ── Helper Validasi Berkas ──────────────────────────────────────────
@@ -190,6 +276,13 @@ function validateDocumentFile(file: File, doc: DocumentFile): FileValidationResu
   return { valid: true };
 }
 
+const DOCUMENT_TYPE_SLUG_MAP: Record<number, string> = {
+  1: 'pas_foto',
+  2: 'berkas_persyaratan',
+  3: 'nda',
+  4: 'surat_permohonan',
+  5: 'video_perkenalan',
+};
 // ─────────────────────────────────────────────────────────────────────
 
 export function PendaftaranFormView({
@@ -200,6 +293,7 @@ export function PendaftaranFormView({
   const {
     bidangs,
     kategoriByBidang,
+    lowonganByKategori,
     submitApplication: internalSubmitApplication,
   } = useInternshipData();
   const [submittedApp, setSubmittedApp] = useState<ApplicationStatus | null>(null);
@@ -220,18 +314,20 @@ export function PendaftaranFormView({
   const [registrationType, setRegistrationType] = useState<RegistrationType>(
     initialDraft?.registrationType ?? 'Kelompok'
   );
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(
-    initialDraft?.teamMembers ?? [
-      { id: 2, fullName: 'Sara', email: 'sara@gmail.com', phone: '08xxxxxxxxxx', nim: '12345679' },
-    ]
-  );
+  // Default kosong — user memang harus mengisi sendiri lewat tombol "Tambah Anggota".
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialDraft?.teamMembers ?? []);
 
   // Step 3: Bidang & Kategori State
   const [selectedBidang, setSelectedBidang] = useState<string>(initialDraft?.selectedBidang ?? '');
   const [selectedKategori, setSelectedKategori] = useState<string>(initialDraft?.selectedKategori ?? '');
 
-  // Step 4: Berkas State — TIDAK dipulihkan dari draft, karena File tidak bisa disimpan di localStorage.
-  // User perlu mengunggah ulang berkas setelah refresh halaman.
+  const [selectedLowongan, setSelectedLowongan] = useState<string>(
+    initialDraft?.selectedLowongan ?? ''
+  );
+
+  // Step 4: Berkas State — metadata-nya statis di sini, tapi File asli
+  // dipulihkan secara async dari IndexedDB lewat useEffect di bawah,
+  // supaya tidak hilang saat halaman di-refresh sebelum submit final.
   const [documents, setDocuments] = useState<DocumentFile[]>([
     {
       id: 1,
@@ -285,12 +381,51 @@ export function PendaftaranFormView({
     },
   ]);
 
+  const [isRestoringFiles, setIsRestoringFiles] = useState<boolean>(true);
+
+  // Pulihkan berkas yang sudah diupload sebelumnya (dari IndexedDB), sekali
+  // saat komponen pertama kali dirender. Ini yang membuat berkas tidak
+  // hilang lagi saat halaman di-refresh.
+  useEffect(() => {
+    let cancelled = false;
+
+    getAllDocumentFilesFromDb()
+      .then((filesById) => {
+        if (cancelled || Object.keys(filesById).length === 0) return;
+
+        setDocuments((prev) =>
+          prev.map((doc) => {
+            const restoredFile = filesById[doc.id];
+            if (!restoredFile) return doc;
+            return {
+              ...doc,
+              file: restoredFile,
+              fileName: restoredFile.name,
+              status: 'Berhasil Upload',
+            };
+          })
+        );
+      })
+      .catch(() => {
+        // IndexedDB tidak tersedia/diblokir (mis. mode private browsing) —
+        // abaikan diam-diam, user tinggal upload ulang secara manual.
+      })
+      .finally(() => {
+        if (!cancelled) setIsRestoringFiles(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Step 5: Pernyataan Checkbox
   const [isDeclared, setIsDeclared] = useState(initialDraft?.isDeclared ?? false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialDraft?.savedAt ?? null);
 
-  // Simpan draft otomatis setiap kali data berubah (kecuali dokumen — lihat catatan di atas)
+  // Simpan draft otomatis setiap kali data berubah (kecuali dokumen, karena
+  // File-nya sendiri sudah dipersist terpisah lewat IndexedDB di atas)
   useEffect(() => {
     if (isSubmitted) return; // jangan simpan draft lagi setelah berhasil submit
 
@@ -302,6 +437,7 @@ export function PendaftaranFormView({
         teamMembers,
         selectedBidang,
         selectedKategori,
+        selectedLowongan,
         isDeclared,
         savedAt: new Date().toISOString(),
       };
@@ -314,7 +450,17 @@ export function PendaftaranFormView({
     }, 500); // debounce ringan supaya tidak menulis di setiap ketikan
 
     return () => clearTimeout(timeout);
-  }, [currentStep, biodata, registrationType, teamMembers, selectedBidang, selectedKategori, isDeclared, isSubmitted]);
+    }, [
+    currentStep,
+    biodata,
+    registrationType,
+    teamMembers,
+    selectedBidang,
+    selectedKategori,
+    selectedLowongan,
+    isDeclared,
+    isSubmitted,
+  ]);
 
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY);
@@ -325,6 +471,12 @@ export function PendaftaranFormView({
   const selectedKategoriName =
     (kategoriByBidang[selectedBidang] || []).find((k) => k.id === selectedKategori)?.name || '';
 
+  const selectedLowonganData =
+  (lowonganByKategori[selectedKategori] || []).find(
+    (lowongan) => lowongan.id === selectedLowongan
+  );
+
+  const selectedLowonganName = selectedLowonganData?.project || '';
   // Photo Upload Handler
   const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -407,6 +559,16 @@ export function PendaftaranFormView({
         d.id === docId ? { ...d, file, fileName: file.name, status: 'Berhasil Upload' } : d
       )
     );
+
+    // Simpan ke IndexedDB supaya tidak hilang kalau halaman di-refresh
+    // sebelum submit final. Dijalankan async tanpa memblokir UI.
+    saveDocumentFileToDb(docId, file).catch(() => {
+      showWarningAlert(
+        'Berkas Tidak Tersimpan Permanen',
+        `Berkas "${doc.name}" berhasil diunggah untuk sesi ini, tetapi gagal disimpan untuk pemulihan otomatis. Jika halaman di-refresh sebelum submit, Anda perlu mengunggah ulang berkas ini.`
+      );
+    });
+
     showToast('success', `Berkas ${file.name} siap dikirim saat submit`);
   };
 
@@ -424,6 +586,10 @@ export function PendaftaranFormView({
           d.id === docId ? { ...d, file: undefined, fileName: undefined, status: 'Belum Upload Berkas' } : d
         )
       );
+      deleteDocumentFileFromDb(docId).catch(() => {
+        // Kalau gagal hapus dari IndexedDB, tidak kritikal — cuma
+        // berpotensi ada file "yatim" tersimpan yang tidak lagi dipakai.
+      });
       showToast('info', 'Berkas berhasil dihapus');
     }
   };
@@ -487,6 +653,7 @@ export function PendaftaranFormView({
       formData.append('fieldId', selectedBidang);
       formData.append('fieldName', selectedBidangName);
       formData.append('kategoriName', selectedKategoriName);
+      formData.append('lowonganId', selectedLowongan);
       formData.append('registrationType', registrationType);
       formData.append('notes', 'Pendaftaran magang berhasil dikirim dan siap diverifikasi.');
 
@@ -499,9 +666,18 @@ export function PendaftaranFormView({
         });
       }
 
+      // agree atau tidak
+      formData.append('isDeclared', isDeclared ? '1' : '0');
+
       documents.forEach((d, i) => {
         if (d.file) {
-          formData.append(`documents[${i}][document_type]`, d.name);
+          const slug = DOCUMENT_TYPE_SLUG_MAP[d.id];
+          if (!slug) {
+            // Lewati dokumen yang belum punya padanan enum di backend,
+            // supaya tidak menyebabkan seluruh transaction gagal.
+            return;
+          }
+          formData.append(`documents[${i}][document_type]`, slug);
           formData.append(`documents[${i}][file]`, d.file);
         }
       });
@@ -512,13 +688,23 @@ export function PendaftaranFormView({
 
       setSubmittedApp(result);
       setIsSubmitted(true);
+      onSuccessSubmit?.(result);
+      
       clearDraft(); // hapus draft setelah berhasil submit, form tidak perlu dipulihkan lagi
+      clearAllDocumentFilesFromDb().catch(() => {
+      });
       showSuccessAlert(
         'Pendaftaran Berhasil Dikirim!',
         `Data pendaftaran magang Anda (${result.id}) telah tersimpan dan sedang dalam proses peninjauan oleh verifikator.`
       );
-    } catch {
-      showWarningAlert('Gagal Mengirim', 'Terjadi kendala saat menyimpan pendaftaran. Silakan coba kembali.');
+    } catch (err) {
+      // Tampilkan pesan error asli dari backend (mis. field mana yang
+      // tidak valid) kalau ada, daripada pesan generik yang membingungkan.
+      const message =
+        err instanceof ApiError && err.message
+          ? err.message
+          : 'Terjadi kendala saat menyimpan pendaftaran. Silakan coba kembali.';
+      showWarningAlert('Gagal Mengirim', message);
     } finally {
       setIsSubmitting(false);
     }
@@ -526,17 +712,18 @@ export function PendaftaranFormView({
 
   if (isSubmitted) {
     return (
-      <SubmissionSuccess
-        submittedApp={submittedApp}
-        selectedBidang={selectedBidangName}
-        selectedKategori={selectedKategoriName}
-        registrationType={registrationType}
-        onSuccessSubmit={onSuccessSubmit}
-        onBackToForm={() => {
+     <SubmissionSuccess
+      submittedApp={submittedApp}
+      selectedBidang={selectedBidangName}
+      selectedKategori={selectedKategoriName}
+      selectedLowongan={selectedLowonganName}
+      registrationType={registrationType}
+      onSuccessSubmit={onSuccessSubmit}
+       onBackToForm={() => {
           setIsSubmitted(false);
           setCurrentStep(1);
         }}
-      />
+    />
     );
   }
 
@@ -577,13 +764,16 @@ export function PendaftaranFormView({
       )}
 
       {currentStep === 3 && (
-        <StepBidangKategori
+       <StepBidangKategori
           bidangOptions={bidangs}
           kategoriByBidang={kategoriByBidang}
+          lowonganByKategori={lowonganByKategori}
           selectedBidang={selectedBidang}
           setSelectedBidang={setSelectedBidang}
           selectedKategori={selectedKategori}
           setSelectedKategori={setSelectedKategori}
+          selectedLowongan={selectedLowongan}
+          setSelectedLowongan={setSelectedLowongan}
           onBack={() => setCurrentStep(2)}
           onNext={() => setCurrentStep(4)}
         />
@@ -604,19 +794,20 @@ export function PendaftaranFormView({
       )}
 
       {currentStep === 5 && (
-        <StepReviewSubmit
-          biodata={biodata}
-          registrationType={registrationType}
-          teamMembers={teamMembers}
-          selectedBidang={selectedBidangName}
-          selectedKategori={selectedKategoriName}
-          documents={documents}
-          isDeclared={isDeclared}
-          setIsDeclared={setIsDeclared}
-          onEditStep={setCurrentStep}
-          onBack={() => setCurrentStep(4)}
-          onSubmit={handleSubmitFinal}
-        />
+      <StepReviewSubmit
+        biodata={biodata}
+        registrationType={registrationType}
+        teamMembers={teamMembers}
+        selectedBidang={selectedBidangName}
+        selectedKategori={selectedKategoriName}
+        selectedLowongan={selectedLowonganName}
+        documents={documents}
+        isDeclared={isDeclared}
+        setIsDeclared={setIsDeclared}
+        onEditStep={setCurrentStep}
+        onBack={() => setCurrentStep(4)}
+        onSubmit={handleSubmitFinal}
+      />
       )}
     </div>
   );

@@ -3,10 +3,14 @@ import { RegistrationType } from '../types';
 
 interface SubmissionSuccessProps {
   submittedApp: ApplicationStatus | null;
+
   selectedBidang: string;
   selectedKategori: string;
+  selectedLowongan: string;
+
   registrationType: RegistrationType;
-  onSuccessSubmit?: (application?: ApplicationStatus) => void;
+
+  onSuccessSubmit?: (application: ApplicationStatus) => void;
   onBackToForm: () => void;
 }
 
@@ -14,6 +18,7 @@ export function SubmissionSuccess({
   submittedApp,
   selectedBidang,
   selectedKategori,
+  selectedLowongan,
   registrationType,
   onSuccessSubmit,
   onBackToForm,
@@ -37,23 +42,40 @@ export function SubmissionSuccess({
           <span>Nomor Pendaftaran:</span>
           <span className="text-[#1f877c] font-mono text-sm">{regNum}</span>
         </div>
+
         <div className="flex justify-between text-slate-600">
           <span>Status Pendaftaran:</span>
           <span className="font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full text-[11px]">
             Sedang Ditinjau
           </span>
         </div>
+
         <div className="flex justify-between text-slate-600">
           <span>Bidang Penempatan:</span>
-          <span className="font-medium text-slate-800">{submittedApp?.fieldName || selectedBidang}</span>
+          <span className="font-medium text-slate-800 text-right ml-4">
+            {submittedApp?.fieldName || selectedBidang}
+          </span>
         </div>
+
         <div className="flex justify-between text-slate-600">
           <span>Kategori:</span>
-          <span className="font-medium text-slate-800">{submittedApp?.kategoriName || selectedKategori}</span>
+          <span className="font-medium text-slate-800 text-right ml-4">
+            {submittedApp?.kategoriName || selectedKategori}
+          </span>
         </div>
+
+        <div className="flex justify-between text-slate-600">
+          <span>Lowongan:</span>
+          <span className="font-medium text-slate-800 text-right ml-4">
+            {submittedApp?.lowongan || selectedLowongan}
+          </span>
+        </div>
+
         <div className="flex justify-between text-slate-600">
           <span>Tipe Pendaftaran:</span>
-          <span className="font-medium text-slate-800">{submittedApp?.registrationType || registrationType}</span>
+          <span className="font-medium text-slate-800 text-right ml-4">
+            {submittedApp?.registrationType || registrationType}
+          </span>
         </div>
       </div>
 
@@ -61,8 +83,8 @@ export function SubmissionSuccess({
         <button
           type="button"
           onClick={() => {
-            if (onSuccessSubmit) {
-              onSuccessSubmit(submittedApp || undefined);
+            if (onSuccessSubmit && submittedApp) {
+              onSuccessSubmit(submittedApp);
             } else {
               onBackToForm();
             }

@@ -1,6 +1,6 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { DocumentFile } from '../types';
-import { showWarningAlert, showToast } from '../../../utils/swal';
+import { showWarningAlert } from '../../../utils/swal';
 
 interface StepBerkasProps {
   documents: DocumentFile[];
@@ -11,6 +11,8 @@ interface StepBerkasProps {
 }
 
 export function StepBerkas({ documents, onUpload, onDelete, onBack, onNext }: StepBerkasProps) {
+  const [previewDoc, setPreviewDoc] = useState<DocumentFile | null>(null);
+
   const handleNext = () => {
     const missingDocs = documents.filter(
       (doc) => doc.required && doc.status !== 'Berhasil Upload'
@@ -27,8 +29,15 @@ export function StepBerkas({ documents, onUpload, onDelete, onBack, onNext }: St
     onNext();
   };
 
+  // Reset input value right after it fires, so re-selecting the exact
+  // same file (e.g. after edit/delete) always triggers onChange again.
+  const handleUploadChange = (docId: number, e: ChangeEvent<HTMLInputElement>) => {
+    onUpload(docId, e);
+    e.target.value = '';
+  };
+
   const handleViewDocument = (doc: DocumentFile) => {
-    showToast('info', `Melihat berkas: ${doc.fileName}`);
+    setPreviewDoc(doc);
   };
 
   return (
@@ -62,66 +71,83 @@ export function StepBerkas({ documents, onUpload, onDelete, onBack, onNext }: St
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-700">
-            {documents.map((doc, idx) => (
-              <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-4 px-2 font-medium text-slate-500">{idx + 1}</td>
-                <td className="py-4 px-2">
-                  <span className="font-bold text-slate-900 block">{doc.name}</span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">{doc.desc}</span>
-                </td>
-                <td className="py-4 px-2">
-                  {doc.required ? (
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      Wajib
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                      Optional
-                    </span>
-                  )}
-                </td>
-                <td className="py-4 px-2 font-medium text-slate-600">{doc.format}</td>
-                <td className="py-4 px-2 font-medium text-slate-600">{doc.maxSize}</td>
-                <td className="py-4 px-2">
-                  {doc.status === 'Berhasil Upload' ? (
-                    <span className="font-bold text-emerald-600 text-xs">Berhasil Upload</span>
-                  ) : (
-                    <span className="text-slate-400 font-medium">Belum Upload Berkas</span>
-                  )}
-                </td>
-                <td className="py-4 px-2 text-center">
-                  {doc.status === 'Berhasil Upload' ? (
-                    <div className="flex items-center justify-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleViewDocument(doc)}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-emerald-700 hover:bg-[#E6F7F3] cursor-pointer"
-                        title="Lihat Berkas"
-                      >
-                        <span className="material-symbols-outlined text-base">visibility</span>
-                      </button>
-                      <label className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-emerald-700 hover:bg-[#E6F7F3] cursor-pointer inline-block">
-                        <input type="file" onChange={(e) => onUpload(doc.id, e)} className="hidden" />
-                        <span className="material-symbols-outlined text-base block">edit</span>
+            {documents.map((doc, idx) => {
+              // Remount key: changes whenever this doc's upload state changes,
+              // forcing the native <input type="file"> to fully reset instead
+              // of silently keeping a stale value after a page/state reset.
+              const inputKey = `${doc.id}-${doc.status}-${doc.fileName ?? 'empty'}`;
+
+              return (
+                <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-4 px-2 font-medium text-slate-500">{idx + 1}</td>
+                  <td className="py-4 px-2">
+                    <span className="font-bold text-slate-900 block">{doc.name}</span>
+                    <span className="text-[11px] text-slate-400 block mt-0.5">{doc.desc}</span>
+                  </td>
+                  <td className="py-4 px-2">
+                    {doc.required ? (
+                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Wajib
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        Optional
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-4 px-2 font-medium text-slate-600">{doc.format}</td>
+                  <td className="py-4 px-2 font-medium text-slate-600">{doc.maxSize}</td>
+                  <td className="py-4 px-2">
+                    {doc.status === 'Berhasil Upload' ? (
+                      <span className="font-bold text-emerald-600 text-xs">Berhasil Upload</span>
+                    ) : (
+                      <span className="text-slate-400 font-medium">Belum Upload Berkas</span>
+                    )}
+                  </td>
+                  <td className="py-4 px-2 text-center">
+                    {doc.status === 'Berhasil Upload' ? (
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleViewDocument(doc)}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-emerald-700 hover:bg-[#E6F7F3] cursor-pointer"
+                          title="Lihat Berkas"
+                        >
+                          <span className="material-symbols-outlined text-base">visibility</span>
+                        </button>
+                        <label className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-emerald-700 hover:bg-[#E6F7F3] cursor-pointer inline-block">
+                          <input
+                            key={inputKey}
+                            type="file"
+                            onChange={(e) => handleUploadChange(doc.id, e)}
+                            className="hidden"
+                          />
+                          <span className="material-symbols-outlined text-base block">edit</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => onDelete(doc.id)}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-400 text-rose-500 hover:bg-rose-50 cursor-pointer"
+                          title="Hapus Berkas"
+                        >
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="p-2 rounded-xl border border-[#1f877c] text-[#1f877c] hover:bg-[#E6F7F3] font-bold text-xs cursor-pointer inline-flex items-center gap-1">
+                        <input
+                          key={inputKey}
+                          type="file"
+                          onChange={(e) => handleUploadChange(doc.id, e)}
+                          className="hidden"
+                        />
+                        <span className="material-symbols-outlined text-base">upload</span>
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => onDelete(doc.id)}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-400 text-rose-500 hover:bg-rose-50 cursor-pointer"
-                        title="Hapus Berkas"
-                      >
-                        <span className="material-symbols-outlined text-base">delete</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="p-2 rounded-xl border border-[#1f877c] text-[#1f877c] hover:bg-[#E6F7F3] font-bold text-xs cursor-pointer inline-flex items-center gap-1">
-                      <input type="file" onChange={(e) => onUpload(doc.id, e)} className="hidden" />
-                      <span className="material-symbols-outlined text-base">upload</span>
-                    </label>
-                  )}
-                </td>
-              </tr>
-            ))}
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -143,6 +169,106 @@ export function StepBerkas({ documents, onUpload, onDelete, onBack, onNext }: St
         >
           Simpan & Lanjutkan
         </button>
+      </div>
+
+      {previewDoc && (
+        <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+      )}
+    </div>
+  );
+}
+
+function DocumentPreviewModal({ doc, onClose }: { doc: DocumentFile; onClose: () => void }) {
+  const objectUrl = useMemo(() => {
+    if (!doc.file) return null;
+    return URL.createObjectURL(doc.file);
+  }, [doc.file]);
+
+  // Always revoke the object URL when it changes or the modal unmounts,
+  // to avoid leaking memory.
+  useEffect(() => {
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [objectUrl]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  const mimeType = doc.file?.type ?? '';
+  const isImage = mimeType.startsWith('image/');
+  const isPdf = mimeType === 'application/pdf';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <p className="text-sm font-bold text-slate-900">{doc.name}</p>
+            <p className="text-[11px] text-slate-400">{doc.fileName}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+            title="Tutup"
+          >
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto bg-slate-50 flex items-center justify-center p-4">
+          {isImage && objectUrl && (
+            <img
+              src={objectUrl}
+              alt={doc.fileName ?? doc.name}
+              className="max-w-full max-h-[65vh] object-contain rounded-lg"
+            />
+          )}
+
+          {isPdf && objectUrl && (
+            <iframe
+              src={objectUrl}
+              title={doc.fileName ?? doc.name}
+              className="w-full h-[65vh] rounded-lg border border-slate-200"
+            />
+          )}
+
+          {!isImage && !isPdf && (
+            <div className="text-center py-10">
+              <span className="material-symbols-outlined text-4xl text-slate-300">description</span>
+              <p className="text-xs text-slate-500 mt-2">
+                {doc.file
+                  ? 'Preview tidak tersedia untuk tipe berkas ini.'
+                  : 'Berkas ini belum dimuat ulang dari server sehingga preview tidak tersedia.'}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">{doc.fileName}</p>
+            </div>
+          )}
+        </div>
+
+        {objectUrl && (
+          <div className="px-5 py-3 border-t border-slate-100 flex justify-end">
+            <a
+              href={objectUrl}
+              download={doc.fileName}
+              className="text-xs font-bold text-[#1f877c] hover:underline"
+            >
+              Unduh Berkas
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -68,6 +68,8 @@ export interface ApplicationStatus {
   fieldId: string;
   fieldName: string;
   kategoriName?: string;
+  lowonganId?: string;
+  lowongan?: string;
   registrationType?: 'Individu' | 'Kelompok';
   teamMembers?: ApplicationTeamMember[];
   documents?: ApplicationDocument[];
