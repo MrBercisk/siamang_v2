@@ -15,11 +15,20 @@ interface RiwayatMagangViewProps {
 }
 
 export function RiwayatMagangView({ applications = [] }: RiwayatMagangViewProps) {
+  const formatDate = (iso?: string): string =>
+    iso
+      ? new Intl.DateTimeFormat('id-ID', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'Asia/Jakarta',
+        }).format(new Date(iso))
+      : '-';
   const riwayatList: RiwayatItem[] = applications.map((app, idx) => ({
           id: app.id || idx + 1,
           regId: app.id,
           periode: app.periode || ([app.periodeStart, app.periodeEnd].filter(Boolean).join(' - ') || '-'),
-          tanggalDaftar: app.submittedAt,
+          tanggalDaftar: formatDate(app.submittedAt),
           bidang: app.fieldName || '-',
           status:
             app.status === 'accepted'
@@ -31,6 +40,7 @@ export function RiwayatMagangView({ applications = [] }: RiwayatMagangViewProps)
 
   const totalDiterima = riwayatList.filter((r) => r.status === 'Diterima').length;
   const totalTidakDiterima = riwayatList.filter((r) => r.status === 'Tidak Diterima').length;
+
 
   return (
     <div className="space-y-6 animate-in fade-in">

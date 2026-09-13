@@ -4,6 +4,7 @@
  */
 
 const BASE_URL = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL || '/api';
+const SERVER_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
 
 export function getStoredToken(): string | null {
   return localStorage.getItem('si_amang_token');
@@ -109,6 +110,15 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       true
     );
   }
+}
+export function resolveStorageUrl(filePath?: string | null): string | null {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+
+  const cleanPath = filePath.replace(/^\/+/, '');
+  const withStoragePrefix = cleanPath.startsWith('storage/') ? cleanPath : `storage/${cleanPath}`;
+
+  return `${SERVER_ORIGIN}/${withStoragePrefix}`;
 }
 
 // Default initial data for preview mode fallback

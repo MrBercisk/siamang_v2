@@ -1,16 +1,3 @@
-// ── Persistensi Berkas via IndexedDB ────────────────────────────────
-//
-// localStorage tidak bisa dipakai untuk menyimpan objek File/Blob (hanya
-// string, dan kapasitasnya cuma ~5MB — tidak cukup untuk video 20MB).
-// IndexedDB bisa menyimpan File asli tanpa perlu diubah ke base64, dan
-// kapasitasnya jauh lebih besar. Ini dipakai supaya berkas yang sudah
-// diupload tidak hilang saat halaman di-refresh sebelum submit final.
-//
-// Catatan penting: URL.createObjectURL() menghasilkan blob: URL yang HANYA
-// valid selama sesi halaman saat ini — begitu halaman di-refresh, browser
-// membuang semua object URL lama. Karena itu, File aslinya harus dibaca
-// ulang dari sini, lalu object URL dibuat ulang, setiap kali komponen mount.
-
 const FILES_DB_NAME = 'si_amang_files_db';
 const FILES_STORE_NAME = 'documents';
 const FILES_DB_VERSION = 1;

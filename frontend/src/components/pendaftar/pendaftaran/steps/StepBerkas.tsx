@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { DocumentFile } from '../../types';
 import { showWarningAlert } from '../../../../utils/swal';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 interface StepBerkasProps {
   documents: DocumentFile[];
@@ -174,102 +175,6 @@ export function StepBerkas({ documents, onUpload, onDelete, onBack, onNext }: St
       {previewDoc && (
         <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
       )}
-    </div>
-  );
-}
-
-function DocumentPreviewModal({ doc, onClose }: { doc: DocumentFile; onClose: () => void }) {
-  const objectUrl = useMemo(() => {
-    if (!doc.file) return null;
-    return URL.createObjectURL(doc.file);
-  }, [doc.file]);
-
-  // Always revoke the object URL when it changes or the modal unmounts,
-  // to avoid leaking memory.
-  useEffect(() => {
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [objectUrl]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
-
-  const mimeType = doc.file?.type ?? '';
-  const isImage = mimeType.startsWith('image/');
-  const isPdf = mimeType === 'application/pdf';
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <div>
-            <p className="text-sm font-bold text-slate-900">{doc.name}</p>
-            <p className="text-[11px] text-slate-400">{doc.fileName}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
-            title="Tutup"
-          >
-            <span className="material-symbols-outlined text-lg">close</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-auto bg-slate-50 flex items-center justify-center p-4">
-          {isImage && objectUrl && (
-            <img
-              src={objectUrl}
-              alt={doc.fileName ?? doc.name}
-              className="max-w-full max-h-[65vh] object-contain rounded-lg"
-            />
-          )}
-
-          {isPdf && objectUrl && (
-            <iframe
-              src={objectUrl}
-              title={doc.fileName ?? doc.name}
-              className="w-full h-[65vh] rounded-lg border border-slate-200"
-            />
-          )}
-
-          {!isImage && !isPdf && (
-            <div className="text-center py-10">
-              <span className="material-symbols-outlined text-4xl text-slate-300">description</span>
-              <p className="text-xs text-slate-500 mt-2">
-                {doc.file
-                  ? 'Preview tidak tersedia untuk tipe berkas ini.'
-                  : 'Berkas ini belum dimuat ulang dari server sehingga preview tidak tersedia.'}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1">{doc.fileName}</p>
-            </div>
-          )}
-        </div>
-
-        {objectUrl && (
-          <div className="px-5 py-3 border-t border-slate-100 flex justify-end">
-            <a
-              href={objectUrl}
-              download={doc.fileName}
-              className="text-xs font-bold text-[#1f877c] hover:underline"
-            >
-              Unduh Berkas
-            </a>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

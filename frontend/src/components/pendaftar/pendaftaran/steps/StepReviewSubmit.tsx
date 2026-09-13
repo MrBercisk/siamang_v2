@@ -1,6 +1,7 @@
-import { FormEvent } from 'react';
+import { FormEvent, useState } from 'react';
 import { BiodataState, DocumentFile, RegistrationType, TeamMember } from '../../types';
-import { showToast, showWarningAlert } from '../../../../utils/swal';
+import { showWarningAlert } from '../../../../utils/swal';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 interface StepReviewSubmitProps {
   biodata: BiodataState;
@@ -31,8 +32,10 @@ export function StepReviewSubmit({
   onBack,
   onSubmit,
 }: StepReviewSubmitProps) {
+  const [previewDoc, setPreviewDoc] = useState<DocumentFile | null>(null);
+
   const handleViewDocument = (doc: DocumentFile) => {
-    showToast('info', `Melihat berkas: ${doc.fileName}`);
+    setPreviewDoc(doc);
   };
 
   const handleDeleteInReview = () => {
@@ -322,6 +325,10 @@ export function StepReviewSubmit({
           </button>
         </div>
       </div>
+
+      {previewDoc && (
+        <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+      )}
     </form>
   );
 }

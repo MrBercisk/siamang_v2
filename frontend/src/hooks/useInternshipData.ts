@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus } from '../types/internship';
+import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus, ApplicationDocument } from '../types/internship';
 import { apiRequest, getStoredToken, DEFAULT_CATEGORIES, DEFAULT_TIMELINE_SCHEDULES, DEFAULT_REQUIREMENTS } from '../lib/api';
 
 interface ApiCollection<T> {
@@ -47,6 +47,14 @@ interface BackendTeamMember {
   nim?: string | null;
 }
 
+interface BackendDocument {
+  id: number;
+  document_type: string;
+  original_name: string;
+  file_path: string;
+  status: string;
+}
+
 interface BackendApplication {
   id: string | number;
   applicantName: string;
@@ -74,6 +82,7 @@ interface BackendApplication {
   periodeStart?: string | null;
   periodeEnd?: string | null;
   teamMembers?: BackendTeamMember[];
+  documents?: ApplicationDocument[];
 }
 
 interface ApiItem<T> {
@@ -138,6 +147,7 @@ function mapApplication(application: BackendApplication): ApplicationStatus {
       phone: m.phone || '',
       nim: m.nim || '',
     })),
+    documents: application.documents,
   };
 }
 

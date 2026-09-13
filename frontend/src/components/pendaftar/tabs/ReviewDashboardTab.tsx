@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { User } from '../../../types/auth';
 import { ApplicationStatus } from '../../../types/internship';
+import { resolveStorageUrl } from '@/src/lib/api';
 
 type StageState = 'done' | 'active' | 'pending' | 'rejected';
 
@@ -447,17 +448,33 @@ export function ReviewDashboardTab({
             <h3 className="text-base font-bold text-slate-900">Berkas Lampiran Pendaftaran</h3>
             <ul className="text-xs space-y-2">
               {latestApp?.documents && latestApp.documents.length > 0 ? (
-                latestApp.documents.map((doc) => (
-                  <li key={doc.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="font-medium text-slate-800 block truncate">{doc.documentType}</span>
-                      <span className="text-[10px] text-slate-400 block truncate">{doc.originalName}</span>
-                    </div>
-                    <span className="text-emerald-700 font-bold text-[11px] bg-emerald-50 px-2 py-0.5 rounded shrink-0">
-                      {doc.status === 'uploaded' ? 'Terunggah' : doc.status}
-                    </span>
-                  </li>
-                ))
+                latestApp.documents.map((doc) => {
+                  const fileUrl = resolveStorageUrl(doc.filePath);
+                  return (
+                    <li key={doc.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <span className="font-medium text-slate-800 block truncate">{doc.documentType}</span>
+                        <span className="text-[10px] text-slate-400 block truncate">{doc.originalName}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-emerald-700 font-bold text-[11px] bg-emerald-50 px-2 py-0.5 rounded">
+                          {doc.status === 'uploaded' ? 'Terunggah' : doc.status}
+                        </span>
+                        {fileUrl && (
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg border border-slate-200 hover:border-[#1f877c] text-[#1f877c] hover:bg-[#E6F7F3] cursor-pointer"
+                            title="Lihat Berkas"
+                          >
+                            <span className="material-symbols-outlined text-base block">visibility</span>
+                          </a>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })
               ) : (
                 <li className="p-4 text-center text-slate-400 text-xs">Belum ada berkas yang diunggah.</li>
               )}
