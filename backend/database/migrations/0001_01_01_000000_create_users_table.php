@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
 
-            // Role & profil SI AMANG
+            // Role & profil SIAMANG
             // 'alumni' = pernah diterima magang & sudah selesai, boleh daftar periode baru lagi.
             // Disinkronkan otomatis oleh ApplicationObserver & BimbinganObserver
             $table->enum('role', ['applicant', 'intern', 'admin', 'mentor', 'alumni'])->default('applicant');

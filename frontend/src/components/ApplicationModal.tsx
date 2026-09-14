@@ -43,7 +43,7 @@ export function ApplicationModal({
         applicantName: applicantName || 'Mahasiswa Pendaftar',
         institution: institution || 'Perguruan Tinggi',
         major: major || 'Program Studi',
-        notes: notes || 'Pendaftaran magang via portal SI AMANG',
+        notes: notes || 'Pendaftaran magang via portal SIAMANG',
       });
       setIsSuccess(true);
       setTimeout(() => {
@@ -85,7 +85,7 @@ export function ApplicationModal({
             </div>
             <h4 className="text-lg font-bold text-slate-900">Pendaftaran Berhasil Dikirim!</h4>
             <p className="text-xs text-slate-600 max-w-sm mx-auto">
-              Berkas Anda telah tersimpan di portal SI AMANG. Silakan pantau tab Status Pendaftaran secara berkala.
+              Berkas Anda telah tersimpan di portal SIAMANG. Silakan pantau tab Status Pendaftaran secara berkala.
             </p>
           </div>
         ) : (

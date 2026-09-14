@@ -20,23 +20,10 @@ class ApplicationRequest extends FormRequest
             'nim' => ['nullable', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:255'],
-            'address' => ['nullable', 'string'],
             'projectTitle' => ['nullable', 'string', 'max:500'],
             'skills' => ['nullable', 'string'],
             'tools' => ['nullable', 'string'],
             'semester' => ['nullable', 'string'],
-
-            'startDate' => [
-                'nullable',
-                'date',
-                'after_or_equal:today',
-            ],
-
-            'endDate' => [
-                'nullable',
-                'date',
-                'after_or_equal:startDate',
-            ],
 
             'fieldId' => ['nullable'],
             'fieldName' => ['required', 'string', 'max:255'],
@@ -66,6 +53,7 @@ class ApplicationRequest extends FormRequest
                 'file',
                 'max:20480',
             ],
+            'photo' => ['nullable', 'image', 'max:2048'], 
 
             'isDeclared' => [
                 'required',

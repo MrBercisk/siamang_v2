@@ -3,7 +3,7 @@ interface NoticeBarProps {
 }
 
 export function NoticeBar({ 
-  text = "Jadwal dapat berubah sewaktu-waktu. Informasi terbaru akan diumumkan melalui aplikasi SI AMANG atau email yang terdaftar." 
+  text = "Jadwal dapat berubah sewaktu-waktu. Informasi terbaru akan diumumkan melalui aplikasi SIAMANG atau email yang terdaftar." 
 }: NoticeBarProps) {
   return (
     <div className="bg-[#ECFDF5] border border-[#D1FAE5] rounded-xl p-4 flex items-start gap-3">

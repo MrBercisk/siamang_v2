@@ -57,7 +57,7 @@ export function ResetPasswordPage({ onNavigateLogin, onNavigateHome }: ResetPass
             <div className="flex items-center gap-3.5">
               <JogjaEmblemLogo className="w-12 h-14 shrink-0 filter drop-shadow-xs" />
               <div>
-                <h3 className="text-xl font-extrabold text-[#0F172A] leading-tight">SI AMANG</h3>
+                <h3 className="text-xl font-extrabold text-[#0F172A] leading-tight">SIAMANG</h3>
                 <p className="text-[11px] font-medium text-slate-500 leading-tight mt-0.5">
                   Sistem Informasi Aplikasi Magang<br />DISKOMINFOSAN Kota Yogyakarta
                 </p>

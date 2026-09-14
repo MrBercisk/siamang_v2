@@ -223,7 +223,7 @@ export function ReviewDashboardTab({
             <div className="flex justify-between items-center">
               <span className="text-slate-400 font-medium">No. Pendaftaran</span>
               <span className="font-extrabold text-[#1f877c] font-mono text-sm">
-                {latestApp?.id || '-'}
+                {latestApp?.registrationNumber || '-'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -325,7 +325,7 @@ export function ReviewDashboardTab({
                 {applications && applications.length > 0 ? (
                   applications.map((app) => (
                     <tr key={app.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3.5 px-2 font-mono font-bold text-[#1f877c]">{app.id}</td>
+                      <td className="py-3.5 px-2 font-mono font-bold text-[#1f877c]">{app.registrationNumber}</td>
                       <td className="py-3.5 px-2">{formatDateShort(app.submittedAt) || '-'}</td>
                       <td className="py-3.5 px-2 font-medium">{app.fieldName || '-'}</td>
                       <td className="py-3.5 px-2">
@@ -493,7 +493,7 @@ export function ReviewDashboardTab({
             <div className="space-y-2 text-xs text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <div>
                 <strong>No. Pendaftaran:</strong>{' '}
-                <span className="font-mono text-[#1f877c] font-bold">{selectedApp?.id || '-'}</span>
+                <span className="font-mono text-[#1f877c] font-bold">{selectedApp?.registrationNumber || '-'}</span>
               </div>
               <div><strong>Bidang:</strong> {selectedApp?.fieldName || '-'}</div>
               <div>

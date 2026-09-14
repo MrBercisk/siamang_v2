@@ -1,7 +1,6 @@
 import { DocumentFile } from '../../types';
 
-// Memetakan id dokumen (state internal form) ke slug document_type yang
-// dikenali backend (ApplicationController::store).
+// mapping type doc
 export const DOCUMENT_TYPE_SLUG_MAP: Record<number, string> = {
   1: 'pas_foto',
   2: 'berkas_persyaratan',

@@ -1,4 +1,5 @@
 import { TimelineSchedule } from '../types/internship';
+import { formatDate } from '../utils/formatters';
 
 interface TimelineCardProps {
   schedule: TimelineSchedule;
@@ -59,7 +60,7 @@ export function TimelineCard({ schedule }: TimelineCardProps) {
       </div>
 
       <p className={`text-lg font-extrabold ${style.text} mb-2`}>
-        {schedule.date}
+        {formatDate(schedule.date)}
       </p>
 
       <p className="text-xs text-slate-600 leading-relaxed">

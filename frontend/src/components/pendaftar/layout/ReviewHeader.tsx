@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { User } from '../../../types/auth';
+import { resolveStorageUrl } from '../../../lib/api';
+import logoPemkot from '../../../assets/logo-pemkot.webp';
 
 interface ReviewHeaderProps {
   user: User;
@@ -21,12 +23,15 @@ export function ReviewHeader({
   const displayEmail = user.email || 'leona@gmail.com';
   const initials = displayName.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
 
+
+  const avatarUrl = resolveStorageUrl(user.avatar_url);
+
   return (
     <header className="bg-white border-b border-slate-200/90 sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 shrink-0 shadow-2xs">
-         <img
-            src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Logo_Kota_Yogyakarta.png"
+          <img
+            src={logoPemkot}
             alt="Logo Kota Yogyakarta"
             className="w-full h-full object-contain"
           />
@@ -34,7 +39,7 @@ export function ReviewHeader({
         <div>
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight leading-none">
-              SI AMANG
+              SIAMANG
             </span>
           </div>
           <span className="text-[10px] sm:text-xs text-slate-500 font-medium block mt-0.5">
@@ -80,8 +85,16 @@ export function ReviewHeader({
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1f877c] text-white flex items-center justify-center font-bold text-xs sm:text-sm border border-emerald-200 shadow-2xs">
-              {initials}
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1f877c] text-white flex items-center justify-center font-bold text-xs sm:text-sm border border-emerald-200 shadow-2xs overflow-hidden shrink-0">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div className="text-left hidden sm:block">
               <span className="block text-xs font-bold text-slate-900 leading-tight">
@@ -96,9 +109,18 @@ export function ReviewHeader({
 
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="px-4 py-2 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-800">{displayName}</p>
-                <p className="text-[10px] text-slate-400 truncate">{displayEmail}</p>
+              <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#1f877c] text-white flex items-center justify-center font-bold text-[11px] overflow-hidden shrink-0">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-800 truncate">{displayName}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{displayEmail}</p>
+                </div>
               </div>
               <button
                 type="button"

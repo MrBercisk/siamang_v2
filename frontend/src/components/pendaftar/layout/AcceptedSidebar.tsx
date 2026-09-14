@@ -115,7 +115,7 @@ export function AcceptedSidebar({
       {!collapsed && (
         <div className="p-4 border-t border-slate-100 text-center">
           <span className="text-[10px] font-medium text-slate-400 block">
-            SI AMANG © 2026 DISKOMINFOSAN
+            SIAMANG V2 © REBUILD 2026 DISKOMINFOSAN
           </span>
         </div>
       )}

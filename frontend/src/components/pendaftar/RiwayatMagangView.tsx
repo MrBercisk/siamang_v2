@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ApplicationStatus } from '../../types/internship';
+import { formatDate } from '../../utils/formatters';
 
 interface RiwayatItem {
   id: number | string;
@@ -15,15 +16,7 @@ interface RiwayatMagangViewProps {
 }
 
 export function RiwayatMagangView({ applications = [] }: RiwayatMagangViewProps) {
-  const formatDate = (iso?: string): string =>
-    iso
-      ? new Intl.DateTimeFormat('id-ID', {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-          timeZone: 'Asia/Jakarta',
-        }).format(new Date(iso))
-      : '-';
+
   const riwayatList: RiwayatItem[] = applications.map((app, idx) => ({
           id: app.id || idx + 1,
           regId: app.id,

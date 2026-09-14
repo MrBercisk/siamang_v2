@@ -291,11 +291,7 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
                         <td className="py-3.5 px-4 text-slate-600 font-medium">No. Handphone</td>
                         <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.phone}</td>
                       </tr>
-                      <tr>
-                        <td className="py-3.5 px-4 font-bold text-slate-400 text-center">4</td>
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">Alamat</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">Yogyakarta</td>
-                      </tr>
+                
                     </tbody>
                   </table>
                 )}

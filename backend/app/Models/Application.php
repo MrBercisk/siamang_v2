@@ -12,6 +12,7 @@ class Application extends Model
     protected $table = 'application';
 
     protected $fillable = [
+        'registration_number',
         'user_id',
         'periode_id',
         'lowongan_id',
@@ -20,12 +21,10 @@ class Application extends Model
         'full_name',
         'email',
         'phone',
-        'address',
         'university',
         'major',
         'semester',
         'nim',
-        'ipk',
         'skills',
         'tools',
         'project_title',
@@ -50,7 +49,6 @@ class Application extends Model
             'declared_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'accepted_at' => 'datetime',
-            'ipk' => 'decimal:2',
         ];
     }
 

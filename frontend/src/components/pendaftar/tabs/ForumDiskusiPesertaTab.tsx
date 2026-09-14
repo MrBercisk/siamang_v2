@@ -26,7 +26,7 @@ export function ForumDiskusiPesertaTab({ user }: ForumDiskusiPesertaTabProps) {
       id: 2,
       sender: user.name || 'Leona Strive',
       time: '08:45 WIB',
-      text: 'Baik Pak Ahmad, draf laporan dan progress modul SI AMANG sudah siap untuk direview.',
+      text: 'Baik Pak Ahmad, draf laporan dan progress modul SIAMANG sudah siap untuk direview.',
       isMentor: false,
     },
   ]);

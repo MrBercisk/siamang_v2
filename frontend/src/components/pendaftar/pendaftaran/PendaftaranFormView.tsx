@@ -49,15 +49,20 @@ export function PendaftaranFormView({
         </p>
       </div>
 
-      <StepperHeader currentStep={form.currentStep} onStepClick={form.setCurrentStep} />
+      <StepperHeader
+        currentStep={form.currentStep}
+        maxAccessibleStep={form.maxAccessibleStep}
+        onStepClick={form.goToStep}
+      />
 
       {form.currentStep === 1 && (
         <StepBiodata
           biodata={form.biodata}
+          periode={form.periode}
           setBiodata={form.setBiodata}
           onPhotoUpload={form.handlePhotoUpload}
           onPhotoDelete={form.handlePhotoDelete}
-          onNext={() => form.setCurrentStep(2)}
+          onNext={form.goToNextStep}
           lastSavedAt={form.lastSavedAt}
         />
       )}
@@ -71,8 +76,8 @@ export function PendaftaranFormView({
           onAddMember={form.handleAddMember}
           onRemoveMember={form.handleRemoveMember}
           onUpdateMember={form.handleUpdateMember}
-          onBack={() => form.setCurrentStep(1)}
-          onNext={() => form.setCurrentStep(3)}
+          onBack={form.goToPreviousStep}
+          onNext={form.goToNextStep}
         />
       )}
 
@@ -87,8 +92,8 @@ export function PendaftaranFormView({
           setSelectedKategori={form.setSelectedKategori}
           selectedLowongan={form.selectedLowongan}
           setSelectedLowongan={form.setSelectedLowongan}
-          onBack={() => form.setCurrentStep(2)}
-          onNext={() => form.setCurrentStep(4)}
+          onBack={form.goToPreviousStep}
+          onNext={form.goToNextStep}
         />
       )}
 
@@ -97,10 +102,10 @@ export function PendaftaranFormView({
           documents={form.documents}
           onUpload={form.handleDocumentUpload}
           onDelete={form.handleDocumentDelete}
-          onBack={() => form.setCurrentStep(3)}
+          onBack={form.goToPreviousStep}
           onNext={() => {
             if (form.validateRequiredDocuments()) {
-              form.setCurrentStep(5);
+              form.goToNextStep();
             }
           }}
         />
@@ -117,8 +122,8 @@ export function PendaftaranFormView({
           documents={form.documents}
           isDeclared={form.isDeclared}
           setIsDeclared={form.setIsDeclared}
-          onEditStep={form.setCurrentStep}
-          onBack={() => form.setCurrentStep(4)}
+          onEditStep={form.goToStep}
+          onBack={form.goToPreviousStep}
           onSubmit={form.handleSubmitFinal}
         />
       )}

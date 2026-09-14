@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User } from '../types/auth';
 import { PageType } from '../types/navigation';
+import logoPemkot from '../assets/logo-pemkot.webp';
 
 export interface NavbarProps {
   currentPage: PageType | string;
@@ -58,18 +59,12 @@ export function Navbar({ currentPage, onNavigate, user, onLogout }: NavbarProps)
               onClick={() => onNavigate('home')}
               className="flex items-center gap-3 cursor-pointer group"
             >
-              <div
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-extrabold text-sm sm:text-base transition-all duration-300 shadow-xs ${
-                  isScrolled
-                    ? 'bg-[#005c55] text-white group-hover:bg-[#0f766e]'
-                    : isDarkHeroPage
-                    ? 'bg-white text-[#005c55] group-hover:bg-slate-100'
-                    : 'bg-[#005c55] text-white group-hover:bg-[#0f766e]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-lg sm:text-xl">
-                  shield_with_house
-                </span>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shrink-0 transition-all duration-300">
+                <img
+                  src={logoPemkot}
+                  alt="Logo Kota Yogyakarta"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <span
@@ -81,7 +76,7 @@ export function Navbar({ currentPage, onNavigate, user, onLogout }: NavbarProps)
                       : 'text-[#005c55]'
                   }`}
                 >
-                  SI AMANG
+                  SIAMANG
                 </span>
                 <span
                   className={`text-[10px] font-medium block mt-0.5 transition-colors ${

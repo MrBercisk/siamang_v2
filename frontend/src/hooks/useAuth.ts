@@ -101,7 +101,7 @@ export function useAuth() {
         }
 
         // Only in network/offline scenario (e.g. preview environment where backend is not running)
-        console.info('[SI AMANG] Backend server unreachable. Running in offline preview simulation.');
+        console.info('[SIAMANG] Backend server unreachable. Running in offline preview simulation.');
         showToast('info', 'Mode offline: Backend tidak terhubung, masuk dalam mode pratinjau.');
         
         const fallbackUser: User = {
@@ -158,7 +158,7 @@ export function useAuth() {
         }
 
         // Offline network fallback for preview demonstration only
-        console.info('[SI AMANG] Backend server unreachable. Running in offline preview simulation.');
+        console.info('[SIAMANG] Backend server unreachable. Running in offline preview simulation.');
         showToast('info', 'Mode offline: Backend tidak terhubung, akun simulasi dibuat.');
 
         const fallbackUser: User = {

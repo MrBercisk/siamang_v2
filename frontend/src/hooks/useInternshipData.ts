@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus, ApplicationDocument } from '../types/internship';
 import { apiRequest, getStoredToken, DEFAULT_CATEGORIES, DEFAULT_TIMELINE_SCHEDULES, DEFAULT_REQUIREMENTS } from '../lib/api';
+import { formatDate } from '../utils/formatters';
 
 interface ApiCollection<T> {
   data: T[];
@@ -25,9 +26,25 @@ interface BackendLowongan {
   periode_id: number;
   kategori_id: number;
   project?: string | null;
+  definisi?: string | null;
+  detail_kebutuhan?: string | null;
   kuota?: number | null;
   filled?: number | null;
   is_active?: boolean;
+}
+export interface LowonganDetail {
+  id: string;
+  title: string;
+  description: string;
+  detailKebutuhan?: string;
+  icon: string;
+  bidangName?: string;
+  kategoriName?: string;
+  fieldId?: string;
+  kategoriId: string;
+  kuota?: number;
+  filled?: number;
+  isActive: boolean;
 }
 
 interface BackendPeriode {
@@ -35,10 +52,14 @@ interface BackendPeriode {
   name?: string | null;
   start_date: string;
   end_date: string;
+  announcement_date?: string | null;
+  internship_start: string;
+  internship_end: string;
   duration_info?: string | null;
   system_type?: string | null;
   is_active: boolean;
 }
+
 interface BackendTeamMember {
   id: number;
   fullName: string;
@@ -47,23 +68,17 @@ interface BackendTeamMember {
   nim?: string | null;
 }
 
-interface BackendDocument {
-  id: number;
-  document_type: string;
-  original_name: string;
-  file_path: string;
-  status: string;
-}
 
 interface BackendApplication {
   id: string | number;
+  registrationNumber: string;
   applicantName: string;
   institution?: string | null;
   major?: string | null;
   nim?: string | null;
   phone?: string | null;
   email?: string | null;
-  address?: string | null;
+
   projectTitle?: string | null;
   skills?: string | null;
   tools?: string | null;
@@ -111,16 +126,26 @@ export interface LowonganOption {
   isActive: boolean;
 }
 
+export interface PeriodeOption {
+  id: string;
+  name: string;
+  internshipStart: string;
+  internshipEnd: string;
+  durationInfo?: string;
+  isActive: boolean;
+}
+
 function mapApplication(application: BackendApplication): ApplicationStatus {
   return {
     id: String(application.id),
+    registrationNumber: application.registrationNumber,
     applicantName: application.applicantName,
     institution: application.institution || '',
     major: application.major || '',
     nim: application.nim || undefined,
     phone: application.phone || undefined,
     email: application.email || undefined,
-    address: application.address || undefined,
+
     projectTitle: application.projectTitle || undefined,
     skills: application.skills || undefined,
     tools: application.tools || undefined,
@@ -160,6 +185,8 @@ export function useInternshipData(isAuthenticated = false) {
   const [lowonganByKategori, setLowonganByKategori] = useState<
     Record<string, LowonganOption[]>
   >({});
+  const [lowongans, setLowongans] = useState<LowonganDetail[]>([]);
+  const [periode, setPeriode] = useState<PeriodeOption | null>(null);
   const [applications, setApplications] = useState<ApplicationStatus[]>(() => {
     const saved = localStorage.getItem('si_amang_applications');
     if (saved) {
@@ -199,7 +226,6 @@ export function useInternshipData(isAuthenticated = false) {
       }
 
       if (kategoriResponse.data.length > 0) {
-        // Kelompokkan kategori berdasarkan bidang_id, untuk dropdown Kategori yang tergantung pada Bidang
         const grouped: Record<string, KategoriOption[]> = {};
         kategoriResponse.data.forEach((kategori) => {
           const bidangId = String(kategori.bidang_id);
@@ -214,30 +240,32 @@ export function useInternshipData(isAuthenticated = false) {
           });
         });
         setKategoriByBidang(grouped);
+
         const groupedLowongan: Record<string, LowonganOption[]> = {};
 
-          lowonganResponse.data
-            .filter((lowongan) => lowongan.is_active !== false)
-            .forEach((lowongan) => {
-              const kategoriId = String(lowongan.kategori_id);
+        lowonganResponse.data
+          .filter((lowongan) => lowongan.is_active !== false)
+          .forEach((lowongan) => {
+            const kategoriId = String(lowongan.kategori_id);
 
-              if (!groupedLowongan[kategoriId]) {
-                groupedLowongan[kategoriId] = [];
-              }
+            if (!groupedLowongan[kategoriId]) {
+              groupedLowongan[kategoriId] = [];
+            }
 
-              groupedLowongan[kategoriId].push({
-                id: String(lowongan.id),
-                kategoriId,
-                project: lowongan.project || 'Lowongan magang',
-                kuota: lowongan.kuota ?? undefined,
-                filled: lowongan.filled ?? undefined,
-                isActive: lowongan.is_active !== false,
-              });
+            groupedLowongan[kategoriId].push({
+              id: String(lowongan.id),
+              kategoriId,
+              project: lowongan.project || 'Lowongan magang',
+              kuota: lowongan.kuota ?? undefined,
+              filled: lowongan.filled ?? undefined,
+              isActive: lowongan.is_active !== false,
             });
+          });
 
-          setLowonganByKategori(groupedLowongan);
+        setLowonganByKategori(groupedLowongan);
 
-        // Tetap pertahankan `categories` (flat) untuk konsumen lama yang menampilkan daftar kategori + lowongan
+        // `categories`: per-KATEGORI, dipakai CategoriesSection di homepage
+        // (checklist ringkas nama-nama lowongan di bawah tiap kategori).
         setCategories(kategoriResponse.data.map((kategori) => ({
           id: String(kategori.id),
           title: kategori.name,
@@ -247,21 +275,83 @@ export function useInternshipData(isAuthenticated = false) {
             .filter((lowongan) => lowongan.kategori_id === kategori.id)
             .map((lowongan) => lowongan.project || 'Lowongan magang'),
         })));
+
+        // `lowongans`: per-LOWONGAN, dipakai InternshipInfoSection tab
+        // "Bidang Tersedia" untuk kartu detail (definisi, kebutuhan, kuota).
+        const kategoriById = new Map(
+          kategoriResponse.data.map((k) => [
+            k.id,
+            { name: k.name, bidangId: String(k.bidang_id) },
+          ])
+        );
+        const bidangNameById = new Map(
+          bidangResponse.data.map((b) => [String(b.id), b.name])
+        );
+
+        setLowongans(
+          lowonganResponse.data
+            .filter((lowongan) => lowongan.is_active !== false)
+            .map((lowongan) => {
+              const kategoriInfo = kategoriById.get(lowongan.kategori_id);
+              const bidangName = kategoriInfo
+                ? bidangNameById.get(kategoriInfo.bidangId)
+                : undefined;
+
+              return {
+                id: String(lowongan.id),
+                title: lowongan.project || 'Lowongan magang',
+                description: lowongan.definisi || 'Deskripsi lowongan belum tersedia.',
+                detailKebutuhan: lowongan.detail_kebutuhan || undefined,
+                icon: 'work',
+                bidangName: bidangName || undefined,
+                kategoriName: kategoriInfo?.name || undefined,
+                fieldId: kategoriInfo?.bidangId,
+                kategoriId: String(lowongan.kategori_id),
+                kuota: lowongan.kuota ?? undefined,
+                filled: lowongan.filled ?? undefined,
+                isActive: lowongan.is_active !== false,
+              };
+            })
+        );
       }
 
-      if (periodeResponse.data.length > 0) {
-        setSchedules(periodeResponse.data.map((periode) => ({
+     if (periodeResponse.data.length > 0) {
+      setSchedules(
+        periodeResponse.data.map((periode) => ({
           id: String(periode.id),
           title: periode.name || 'Periode Magang',
-          date: `${periode.start_date} - ${periode.end_date}`,
-          subtext: periode.duration_info || periode.system_type || 'Informasi periode magang',
+             date: `${formatDate(periode.start_date)} - ${formatDate(periode.end_date)}`,
+          subtext:
+            periode.duration_info ||
+            periode.system_type ||
+            'Informasi periode magang',
           description: periode.is_active
             ? 'Periode pendaftaran sedang aktif.'
             : 'Periode pendaftaran telah dijadwalkan.',
           icon: 'calendar_today',
           statusColor: periode.is_active ? 'success' : 'secondary',
-        })));
-      }
+        }))
+      );
+
+      const activePeriode = periodeResponse.data.find(
+        (periode) => periode.is_active
+      );
+
+      setPeriode(
+        activePeriode
+          ? {
+              id: String(activePeriode.id),
+              name: activePeriode.name || 'Periode Magang',
+              internshipStart: activePeriode.internship_start,
+              internshipEnd: activePeriode.internship_end,
+              durationInfo: activePeriode.duration_info || undefined,
+              isActive: activePeriode.is_active,
+            }
+          : null
+      );
+    } else {
+      setPeriode(null);
+    }
 
       if (isAuthenticated && getStoredToken()) {
         const applicationResponse = await apiRequest<ApiCollection<BackendApplication>>('/applications');
@@ -303,12 +393,14 @@ export function useInternshipData(isAuthenticated = false) {
 
   return {
     categories,
+    lowongans,
     schedules,
     requirements,
     applications,
     bidangs,
     kategoriByBidang,
     lowonganByKategori,
+    periode,
     loading,
     error,
     refreshData: fetchBackendData,

@@ -102,7 +102,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       throw err;
     }
     // Network / offline error
-    console.warn(`[SI AMANG API] Network connection failed for ${url}:`, err);
+    console.warn(`[SIAMANG API] Network connection failed for ${url}:`, err);
     throw new ApiError(
       'Tidak dapat terhubung ke server backend (Network/Offline error).',
       undefined,
@@ -111,6 +111,38 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
     );
   }
 }
+export interface TrackedApplication {
+  id: string;
+  registrationNumber: string;
+  applicantName: string;
+  institution?: string;
+  fieldName?: string;
+  kategoriName?: string;
+  lowongan?: string;
+  status: 'pending' | 'reviewing' | 'accepted' | 'rejected';
+  submittedAt?: string;
+  reviewedAt?: string;
+  acceptedAt?: string;
+  notes?: string;
+  periode?: string;
+  periodeStart?: string;
+  periodeEnd?: string;
+}
+
+export async function trackApplication(
+  registrationNumber: string,
+  email: string
+): Promise<TrackedApplication> {
+  const params = new URLSearchParams({
+    registration_number: registrationNumber.trim(),
+    email: email.trim(),
+  });
+  const response = await apiRequest<{ data: TrackedApplication }>(
+    `/applications/track?${params.toString()}`
+  );
+  return response.data;
+}
+
 export function resolveStorageUrl(filePath?: string | null): string | null {
   if (!filePath) return null;
   if (/^https?:\/\//i.test(filePath)) return filePath;

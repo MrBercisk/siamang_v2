@@ -29,16 +29,14 @@ interface UsePendaftaranFormArgs {
   onSuccessSubmit?: (application: ApplicationStatus) => void;
 }
 
-/**
- * Semua state, efek pemulihan/persistensi, dan handler untuk alur
- * Pendaftaran Magang (5 langkah). Diekstrak dari PendaftaranFormView.tsx
- * supaya komponen itu sendiri cukup jadi lapisan render saja.
- */
+const TOTAL_STEPS = 5;
+
 export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit }: UsePendaftaranFormArgs) {
   const {
     bidangs,
     kategoriByBidang,
     lowonganByKategori,
+    periode,
     submitApplication: internalSubmitApplication,
   } = useInternshipData();
 
@@ -55,6 +53,13 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
   const [biodata, setBiodata] = useState<BiodataState>(
     initialDraft?.biodata ?? getDefaultBiodata(user)
   );
+
+  // Objek File asli foto profil — terpisah dari `biodata.photoUrl` (yang
+  // cuma blob URL untuk preview) supaya ada file nyata yang bisa dikirim
+  // ke backend saat submit. Tidak dipersist ke draft localStorage (File
+  // tidak bisa di-serialize JSON); dipulihkan dari IndexedDB lewat effect
+  // di bawah — pola yang sama persis dengan `documents[].file`.
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   // Step 2: Tipe Pendaftaran State
   const [registrationType, setRegistrationType] = useState<RegistrationType>(
@@ -110,6 +115,8 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
   // Wajib dilakukan karena biodata.photoUrl yang tersimpan di draft
   // localStorage adalah blob: URL lama yang sudah tidak valid lagi setelah
   // refresh — tanpa ini, thumbnail & modal preview foto akan tampak rusak/kosong.
+  // Sekaligus memulihkan `photoFile` (File asli) supaya tetap bisa dikirim
+  // ke backend saat submit walau halaman sempat di-refresh sebelum submit.
   useEffect(() => {
     let cancelled = false;
 
@@ -122,6 +129,7 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
           photoUrl: freshUrl,
           photoFileName: restoredFile.name,
         }));
+        setPhotoFile(restoredFile);
       })
       .catch(() => {
         // IndexedDB tidak tersedia/diblokir — abaikan diam-diam, user
@@ -138,8 +146,8 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialDraft?.savedAt ?? null);
 
-  // Simpan draft otomatis setiap kali data berubah (kecuali dokumen, karena
-  // File-nya sendiri sudah dipersist terpisah lewat IndexedDB di atas)
+  // Simpan draft otomatis setiap kali data berubah (kecuali dokumen & foto,
+  // karena File-nya sendiri sudah dipersist terpisah lewat IndexedDB di atas)
   useEffect(() => {
     if (isSubmitted) return; // jangan simpan draft lagi setelah berhasil submit
 
@@ -180,7 +188,71 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
     localStorage.removeItem(DRAFT_KEY);
   };
 
-  // Cari nama asli Bidang & Kategori dari ID terpilih, untuk ditampilkan/payload
+  const isBiodataStepValid = (): boolean => {
+    const requiredFields: (keyof BiodataState)[] = [
+      'university',
+      'major',
+      'nim',
+      'semester',
+      'projectTitle',
+      'skills',
+      'tools',
+    ];
+    return requiredFields.every((field) => biodata[field]?.toString().trim());
+  };
+
+  const isTipeStepValid = (): boolean => {
+    if (registrationType === 'Individu') return true;
+    return teamMembers.length > 0 && teamMembers.every((m) => m.fullName?.trim());
+  };
+
+  const isBidangStepValid = (): boolean =>
+    Boolean(selectedBidang && selectedKategori && selectedLowongan);
+
+  const isBerkasStepValid = (): boolean =>
+    documents.filter((d) => d.required).every((d) => Boolean(d.file));
+
+  const STEP_VALIDATORS: Record<number, () => boolean> = {
+    1: isBiodataStepValid,
+    2: isTipeStepValid,
+    3: isBidangStepValid,
+    4: isBerkasStepValid,
+  };
+
+  const computeMaxAccessibleStep = (): number => {
+    let max = 1;
+    for (let step = 1; step < TOTAL_STEPS; step++) {
+      const validator = STEP_VALIDATORS[step];
+      if (validator && !validator()) break;
+      max = step + 1;
+    }
+    return max;
+  };
+
+  const maxAccessibleStep = computeMaxAccessibleStep();
+
+  const goToStep = (step: number) => {
+    const accessible = computeMaxAccessibleStep();
+
+    if (step < 1 || step > accessible) {
+      showWarningAlert(
+        'Lengkapi Data Terlebih Dahulu',
+        'Mohon lengkapi data pada langkah saat ini sebelum berpindah ke langkah berikutnya.'
+      );
+      return;
+    }
+
+    setCurrentStep(step);
+  };
+
+  const goToNextStep = () => {
+    setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
+  };
+
+  const goToPreviousStep = () => {
+    setCurrentStep((prev) => Math.max(1, prev - 1));
+  };
+
   const selectedBidangName = bidangs.find((b) => b.id === selectedBidang)?.name || '';
   const selectedKategoriName =
     (kategoriByBidang[selectedBidang] || []).find((k) => k.id === selectedKategori)?.name || '';
@@ -219,6 +291,8 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
     }
 
     setBiodata({ ...biodata, photoUrl: URL.createObjectURL(file), photoFileName: file.name });
+    setPhotoFile(file); // simpan File asli supaya bisa dikirim ke backend saat submit
+
     saveDocumentFileToDb(PROFILE_PHOTO_KEY, file).catch(() => {
       showWarningAlert(
         'Foto Tidak Tersimpan Permanen',
@@ -233,6 +307,7 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
       URL.revokeObjectURL(biodata.photoUrl);
     }
     setBiodata({ ...biodata, photoUrl: '', photoFileName: undefined });
+    setPhotoFile(null);
     deleteDocumentFileFromDb(PROFILE_PHOTO_KEY).catch(() => {});
     showToast('info', 'Foto profil berhasil dihapus');
   };
@@ -282,7 +357,7 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
 
     if (!validation.valid) {
       showWarningAlert(validation.errorTitle || 'Berkas Tidak Valid', validation.errorMessage || '');
-      e.target.value = ''; // reset input supaya user bisa pilih ulang file yang sama jika perlu
+      e.target.value = '';
       return;
     }
 
@@ -292,8 +367,6 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
       )
     );
 
-    // Simpan ke IndexedDB supaya tidak hilang kalau halaman di-refresh
-    // sebelum submit final. Dijalankan async tanpa memblokir UI.
     saveDocumentFileToDb(docId, file).catch(() => {
       showWarningAlert(
         'Berkas Tidak Tersimpan Permanen',
@@ -318,10 +391,7 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
           d.id === docId ? { ...d, file: undefined, fileName: undefined, status: 'Belum Upload Berkas' } : d
         )
       );
-      deleteDocumentFileFromDb(docId).catch(() => {
-        // Kalau gagal hapus dari IndexedDB, tidak kritikal — cuma
-        // berpotensi ada file "yatim" tersimpan yang tidak lagi dipakai.
-      });
+      deleteDocumentFileFromDb(docId).catch(() => {});
       showToast('info', 'Berkas berhasil dihapus');
     }
   };
@@ -376,10 +446,10 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
       formData.append('nim', biodata.nim);
       formData.append('phone', biodata.phone);
       formData.append('email', biodata.email);
-      formData.append('address', biodata.address);
       formData.append('projectTitle', biodata.projectTitle);
       formData.append('skills', biodata.skills);
       formData.append('tools', biodata.tools);
+      formData.append('semester', biodata.semester);
       formData.append('startDate', biodata.startDate);
       formData.append('endDate', biodata.endDate);
       formData.append('fieldId', selectedBidang);
@@ -388,6 +458,11 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
       formData.append('lowonganId', selectedLowongan);
       formData.append('registrationType', registrationType);
       formData.append('notes', 'Pendaftaran magang berhasil dikirim dan siap diverifikasi.');
+
+      // foto profil
+      if (photoFile) {
+        formData.append('photo', photoFile);
+      }
 
       if (registrationType === 'Kelompok') {
         teamMembers.forEach((m, i) => {
@@ -398,39 +473,35 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
         });
       }
 
-      // agree atau tidak
       formData.append('isDeclared', isDeclared ? '1' : '0');
 
       documents.forEach((d, i) => {
         if (d.file) {
           const slug = DOCUMENT_TYPE_SLUG_MAP[d.id];
-          if (!slug) {
-            // Lewati dokumen yang belum punya padanan enum di backend,
-            // supaya tidak menyebabkan seluruh transaction gagal.
-            return;
-          }
+          if (!slug) return;
           formData.append(`documents[${i}][document_type]`, slug);
           formData.append(`documents[${i}][file]`, d.file);
         }
       });
 
-      const result = onSubmitApplication
-        ? await onSubmitApplication(formData)
-        : await internalSubmitApplication(formData);
+    const result = onSubmitApplication
+      ? await onSubmitApplication(formData)
+      : await internalSubmitApplication(formData);
 
-      setSubmittedApp(result);
-      setIsSubmitted(true);
-      onSuccessSubmit?.(result);
+    setSubmittedApp(result);
 
-      clearDraft(); // hapus draft setelah berhasil submit, form tidak perlu dipulihkan lagi
-      clearAllDocumentFilesFromDb().catch(() => {});
-      showSuccessAlert(
-        'Pendaftaran Berhasil Dikirim!',
-        `Data pendaftaran magang Anda (${result.id}) telah tersimpan dan sedang dalam proses peninjauan oleh verifikator.`
-      );
+    // Bersihkan data draft & file lokal setelah submit berhasil
+    clearDraft();
+    clearAllDocumentFilesFromDb().catch(() => {});
+
+    setIsSubmitted(true);
+    onSuccessSubmit?.(result);
+
+    showSuccessAlert(
+      'Pendaftaran Berhasil Dikirim!',
+      `Data pendaftaran magang Anda (${result.registrationNumber}) telah tersimpan dan sedang dalam proses peninjauan oleh verifikator.`
+    );
     } catch (err) {
-      // Tampilkan pesan error asli dari backend (mis. field mana yang
-      // tidak valid) kalau ada, daripada pesan generik yang membingungkan.
       const message =
         err instanceof ApiError && err.message
           ? err.message
@@ -442,28 +513,29 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
   };
 
   return {
-    // data referensi
     bidangs,
     kategoriByBidang,
     lowonganByKategori,
+    periode,
 
-    // state umum
     submittedApp,
     isSubmitting,
     isRestoringFiles,
     currentStep,
     setCurrentStep,
+    maxAccessibleStep,
+    goToStep,
+    goToNextStep,
+    goToPreviousStep,
     isSubmitted,
     setIsSubmitted,
     lastSavedAt,
 
-    // biodata
     biodata,
     setBiodata,
     handlePhotoUpload,
     handlePhotoDelete,
 
-    // tipe pendaftaran & anggota tim
     registrationType,
     setRegistrationType,
     teamMembers,
@@ -471,7 +543,6 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
     handleRemoveMember,
     handleUpdateMember,
 
-    // bidang & kategori
     selectedBidang,
     setSelectedBidang,
     selectedKategori,
@@ -482,13 +553,11 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
     selectedKategoriName,
     selectedLowonganName,
 
-    // dokumen
     documents,
     handleDocumentUpload,
     handleDocumentDelete,
     validateRequiredDocuments,
 
-    // pernyataan & submit
     isDeclared,
     setIsDeclared,
     handleSubmitFinal,

@@ -8,7 +8,7 @@ export interface BiodataState {
   fullName: string;
   email: string;
   phone: string;
-  address: string;
+
   university: string;
   major: string;
   semester: string;
@@ -109,7 +109,7 @@ export interface ApplicationStatus {
   nim?: string;
   phone?: string;
   email?: string;
-  address?: string;
+
   projectTitle?: string;
   skills?: string;
   tools?: string;

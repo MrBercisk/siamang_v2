@@ -1,4 +1,4 @@
-# PROJECT_STATUS.md — SI AMANG
+# PROJECT_STATUS.md — SIAMANG
 
 > Dokumen ini adalah peta kondisi project **saat ini**, dihasilkan dari analisis langsung terhadap source code (backend Laravel + frontend React), bukan dari asumsi nama file/folder. Terakhir dianalisis: source code hasil ekstrak `siamang.rar`.
 
@@ -6,7 +6,7 @@
 
 ## 1. Project Overview
 
-**Nama Project:** SI AMANG (Sistem Informasi Magang)
+**Nama Project:** SIAMANG (Sistem Informasi Aplikasi Magang)
 
 **Tujuan:** Portal pendaftaran & manajemen magang untuk instansi pemerintah (DISKOMINFOSAN Kota Yogyakarta — terlihat dari branding di frontend). Mencakup alur: pendaftaran online oleh calon peserta magang → seleksi/verifikasi oleh admin → bimbingan oleh mentor → pelaporan & penilaian akhir.
 

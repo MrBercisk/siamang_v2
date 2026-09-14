@@ -34,6 +34,8 @@ Route::apiResource('kategoris', KategoriController::class)->only(['index', 'show
 Route::apiResource('periodes', PeriodeController::class)->only(['index', 'show']);
 Route::apiResource('lowongans', LowonganController::class)->only(['index', 'show']);
 
+Route::get('/applications/track', [ApplicationController::class, 'track']);
+
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::apiResource('bidangs', BidangController::class)->only(['store', 'update', 'destroy']);
     Route::apiResource('kategoris', KategoriController::class)->only(['store', 'update', 'destroy']);

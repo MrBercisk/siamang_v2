@@ -19,19 +19,23 @@ export function loadDraft(): DraftState | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as DraftState;
+    const parsed = JSON.parse(raw) as DraftState;
+
+    if (parsed.biodata && !parsed.biodata.semester) {
+      parsed.biodata.semester = '5';
+    }
+
+    return parsed;
   } catch {
     return null;
   }
 }
-
 export function getDefaultBiodata(user: User): BiodataState {
   return {
     photoUrl: '',
     fullName: user.name || 'Leona Strive',
     email: user.email || 'leona@gmail.com',
     phone: '08123456789',
-    address: 'Yogyakarta',
     university: user.institution || '',
     major: '',
     semester: '5',
