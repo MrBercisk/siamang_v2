@@ -31,6 +31,7 @@ class ApplicationService
             ->latest('submitted_at')
             ->get();
     }
+
     private function generateRegistrationNumber(Periode $periode): string
     {
         $periode = Periode::where('id', $periode->id)
@@ -49,8 +50,56 @@ class ApplicationService
             $sequence
         );
     }
+
+    /**
+     * Mencegah user mendaftar lagi kalau aplikasi terakhirnya:
+     * - masih menunggu review ('reviewing' — status default saat submit), atau
+     * - sudah 'accepted' tapi periode magangnya belum lewat (masih berjalan).
+     *
+     * Dipanggil di awal create() sebagai pengaman di sisi server — terlepas
+     * dari gating yang sudah ada di UI (ReviewSidebar/PendaftarReviewDashboard),
+     * karena UI lock saja bisa dilewati lewat request langsung ke API.
+     */
+    private function assertUserCanApply(User $user): void
+    {
+        $latest = $user->applications()
+            ->latest('submitted_at')
+            ->first();
+
+        if (! $latest) {
+            return; // belum pernah mendaftar sama sekali
+        }
+
+        if ($latest->status === 'reviewing') {
+            throw ValidationException::withMessages([
+                'application' => [
+                    'Anda masih memiliki pendaftaran magang (' . $latest->registration_number . ') yang sedang menunggu proses peninjauan. Mohon tunggu hasilnya terlebih dahulu sebelum mendaftar kembali.'
+                ],
+            ]);
+        }
+
+        if ($latest->status === 'accepted') {
+            $stillOngoing = ! $latest->internship_end
+                || $latest->internship_end->isFuture()
+                || $latest->internship_end->isToday();
+
+            if ($stillOngoing) {
+                throw ValidationException::withMessages([
+                    'application' => [
+                        'Anda sedang menjalani program magang (' . $latest->registration_number . ') dan belum dapat mendaftar kembali hingga periode magang Anda selesai.'
+                    ],
+                ]);
+            }
+        }
+
+        // status 'rejected', atau 'accepted' dengan internship_end sudah
+        // lewat → boleh mendaftar lagi, tidak perlu dilempar exception.
+    }
+
     public function create(User $user, array $validated, Request $request): Application
     {
+        $this->assertUserCanApply($user);
+
         $periode = $this->getActivePeriod();
 
         $bidang = $this->resolveBidang($validated);
@@ -94,12 +143,11 @@ class ApplicationService
                 $request
             );
 
-
             $this->storeTeamMembers(
                 $application,
                 $validated['teamMembers'] ?? []
             );
-            
+
             $this->syncUserProfile($user, $validated);
 
             return $application->load([
@@ -265,6 +313,7 @@ class ApplicationService
             ]);
         }
     }
+
     private function storeProfilePhoto(
         User $user,
         Application $application,
@@ -281,7 +330,8 @@ class ApplicationService
         if ($user->avatar_url) {
             Storage::disk('public')->delete($user->avatar_url);
         }
-         $directory = 'applications/' . $application->registration_number . '/profile';
+
+        $directory = 'applications/' . $application->registration_number . '/profile';
 
         // Disimpan di folder yang sama dengan berkas dokumen lainnya untuk
         // aplikasi ini, konsisten dengan storeDocuments().
@@ -309,6 +359,7 @@ class ApplicationService
             ]);
         }
     }
+
     private function syncUserProfile(User $user, array $validated): void
     {
         $updates = [];

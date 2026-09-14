@@ -1,4 +1,14 @@
+import { showWarningAlert } from '../../../utils/swal';
 export type ReviewTab = 'dashboard' | 'pendaftaran' | 'riwayat' | 'profile';
+
+// Status aplikasi terakhir milik user, dipakai untuk menentukan boleh/tidaknya
+// membuka form pendaftaran baru. `null` berarti belum pernah mendaftar sama
+// sekali, atau aplikasi terakhirnya sudah "selesai siklusnya" (ditolak, atau
+// diterima dan periode magangnya sudah lewat) — sehingga boleh daftar lagi.
+export type PendaftaranLockReason =
+  | { locked: true; reason: 'reviewing'; registrationNumber?: string }
+  | { locked: true; reason: 'accepted-ongoing'; registrationNumber?: string; internshipEnd?: string }
+  | { locked: false };
 
 interface ReviewSidebarProps {
   activeTab: ReviewTab;
@@ -6,6 +16,7 @@ interface ReviewSidebarProps {
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onLogout: () => void;
+  pendaftaranLock: PendaftaranLockReason;
 }
 
 export function ReviewSidebar({
@@ -14,8 +25,36 @@ export function ReviewSidebar({
   collapsed,
   onToggleCollapsed,
   onLogout,
+  pendaftaranLock,
 }: ReviewSidebarProps) {
-  return (
+  const isPendaftaranLocked = pendaftaranLock.locked;
+
+  const handlePendaftaranClick = () => {
+    if (!isPendaftaranLocked) {
+      onChangeTab('pendaftaran');
+      return;
+    }
+
+    if (pendaftaranLock.reason === 'reviewing') {
+      showWarningAlert(
+        'Pendaftaran Sedang Diproses',
+        `Anda sudah memiliki pendaftaran magang${
+          pendaftaranLock.registrationNumber ? ` (${pendaftaranLock.registrationNumber})` : ''
+        } yang masih menunggu proses peninjauan oleh verifikator. Mohon tunggu hasilnya terlebih dahulu sebelum mendaftar kembali.`
+      );
+      return;
+    }
+
+    showWarningAlert(
+      'Sedang Menjalani Program Magang',
+      `Pendaftaran magang Anda${
+        pendaftaranLock.registrationNumber ? ` (${pendaftaranLock.registrationNumber})` : ''
+      } telah diterima dan program magang Anda masih berlangsung${
+        pendaftaranLock.internshipEnd ? ` hingga ${pendaftaranLock.internshipEnd}` : ''
+      }. Anda dapat mendaftar kembali setelah periode magang ini selesai.`
+    );
+  };
+ return (
     <aside className={`bg-white border-r border-slate-200/90 transition-all duration-300 flex flex-col justify-between relative z-20 ${collapsed ? 'w-16 sm:w-20' : 'w-60 sm:w-64'}`}>
       <button
         type="button"
@@ -50,12 +89,21 @@ export function ReviewSidebar({
 
           <button
             type="button"
-            onClick={() => onChangeTab('pendaftaran')}
+            onClick={handlePendaftaranClick}
+            title={
+              isPendaftaranLocked
+                ? pendaftaranLock.reason === 'reviewing'
+                  ? 'Menunggu hasil peninjauan pendaftaran sebelumnya'
+                  : 'Sedang menjalani program magang'
+                : undefined
+            }
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'pendaftaran' ? 'bg-[#E6F7F3] text-[#1f877c] font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-            }`}
+            } ${isPendaftaranLocked ? 'opacity-60' : ''}`}
           >
-            <span className="material-symbols-outlined text-xl">assignment</span>
+            <span className="material-symbols-outlined text-xl">
+              {isPendaftaranLocked ? 'lock' : 'assignment'}
+            </span>
             {!collapsed && <span>Pendaftaran Magang</span>}
           </button>
 
