@@ -16,7 +16,7 @@ export function HelpChatWidget() {
       {showHelpChat && (
         <div className="absolute bottom-16 right-0 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 z-50">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-            <h4 className="text-xs font-bold text-slate-800">Bantuan SI AMANG</h4>
+            <h4 className="text-xs font-bold text-slate-800">Bantuan SIAMANG</h4>
             <button type="button" onClick={() => setShowHelpChat(false)} className="text-slate-400 hover:text-slate-600">
               <span className="material-symbols-outlined text-base">close</span>
             </button>

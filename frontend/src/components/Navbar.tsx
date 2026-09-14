@@ -81,7 +81,7 @@ export function Navbar({ currentPage, onNavigate, user, onLogout }: NavbarProps)
                       : 'text-[#005c55]'
                   }`}
                 >
-                  SI AMANG
+                  SIAMANG
                 </span>
                 <span
                   className={`text-[10px] font-medium block mt-0.5 transition-colors ${

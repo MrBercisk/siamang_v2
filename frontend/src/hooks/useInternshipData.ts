@@ -35,10 +35,14 @@ interface BackendPeriode {
   name?: string | null;
   start_date: string;
   end_date: string;
+  announcement_date?: string | null;
+  internship_start: string;
+  internship_end: string;
   duration_info?: string | null;
   system_type?: string | null;
   is_active: boolean;
 }
+
 interface BackendTeamMember {
   id: number;
   fullName: string;
@@ -47,23 +51,17 @@ interface BackendTeamMember {
   nim?: string | null;
 }
 
-interface BackendDocument {
-  id: number;
-  document_type: string;
-  original_name: string;
-  file_path: string;
-  status: string;
-}
 
 interface BackendApplication {
   id: string | number;
+  registrationNumber: string;
   applicantName: string;
   institution?: string | null;
   major?: string | null;
   nim?: string | null;
   phone?: string | null;
   email?: string | null;
-  address?: string | null;
+
   projectTitle?: string | null;
   skills?: string | null;
   tools?: string | null;
@@ -111,16 +109,26 @@ export interface LowonganOption {
   isActive: boolean;
 }
 
+export interface PeriodeOption {
+  id: string;
+  name: string;
+  internshipStart: string;
+  internshipEnd: string;
+  durationInfo?: string;
+  isActive: boolean;
+}
+
 function mapApplication(application: BackendApplication): ApplicationStatus {
   return {
     id: String(application.id),
+    registrationNumber: application.registrationNumber,
     applicantName: application.applicantName,
     institution: application.institution || '',
     major: application.major || '',
     nim: application.nim || undefined,
     phone: application.phone || undefined,
     email: application.email || undefined,
-    address: application.address || undefined,
+
     projectTitle: application.projectTitle || undefined,
     skills: application.skills || undefined,
     tools: application.tools || undefined,
@@ -160,6 +168,7 @@ export function useInternshipData(isAuthenticated = false) {
   const [lowonganByKategori, setLowonganByKategori] = useState<
     Record<string, LowonganOption[]>
   >({});
+  const [periode, setPeriode] = useState<PeriodeOption | null>(null);
   const [applications, setApplications] = useState<ApplicationStatus[]>(() => {
     const saved = localStorage.getItem('si_amang_applications');
     if (saved) {
@@ -249,19 +258,43 @@ export function useInternshipData(isAuthenticated = false) {
         })));
       }
 
-      if (periodeResponse.data.length > 0) {
-        setSchedules(periodeResponse.data.map((periode) => ({
+     if (periodeResponse.data.length > 0) {
+      setSchedules(
+        periodeResponse.data.map((periode) => ({
           id: String(periode.id),
           title: periode.name || 'Periode Magang',
           date: `${periode.start_date} - ${periode.end_date}`,
-          subtext: periode.duration_info || periode.system_type || 'Informasi periode magang',
+          subtext:
+            periode.duration_info ||
+            periode.system_type ||
+            'Informasi periode magang',
           description: periode.is_active
             ? 'Periode pendaftaran sedang aktif.'
             : 'Periode pendaftaran telah dijadwalkan.',
           icon: 'calendar_today',
           statusColor: periode.is_active ? 'success' : 'secondary',
-        })));
-      }
+        }))
+      );
+
+      const activePeriode = periodeResponse.data.find(
+        (periode) => periode.is_active
+      );
+
+      setPeriode(
+        activePeriode
+          ? {
+              id: String(activePeriode.id),
+              name: activePeriode.name || 'Periode Magang',
+              internshipStart: activePeriode.internship_start,
+              internshipEnd: activePeriode.internship_end,
+              durationInfo: activePeriode.duration_info || undefined,
+              isActive: activePeriode.is_active,
+            }
+          : null
+      );
+    } else {
+      setPeriode(null);
+    }
 
       if (isAuthenticated && getStoredToken()) {
         const applicationResponse = await apiRequest<ApiCollection<BackendApplication>>('/applications');
@@ -309,6 +342,7 @@ export function useInternshipData(isAuthenticated = false) {
     bidangs,
     kategoriByBidang,
     lowonganByKategori,
+    periode,
     loading,
     error,
     refreshData: fetchBackendData,

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ApplicationResource extends JsonResource
 {
@@ -11,15 +12,18 @@ class ApplicationResource extends JsonResource
     {
         return [
             'id' => (string) $this->id,
-
+            'registrationNumber' => $this->registration_number,
             'applicantName' => $this->full_name,
+
+            'avatarUrl' => $this->user?->avatar_url
+                ? Storage::url($this->user->avatar_url)
+                : null,
+
             'institution' => $this->university,
             'major' => $this->major,
             'nim' => $this->nim,
             'phone' => $this->phone,
             'email' => $this->email,
-            'address' => $this->address,
-
             'projectTitle' => $this->project_title,
             'skills' => $this->skills,
             'tools' => $this->tools,

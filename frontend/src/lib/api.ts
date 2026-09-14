@@ -102,7 +102,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       throw err;
     }
     // Network / offline error
-    console.warn(`[SI AMANG API] Network connection failed for ${url}:`, err);
+    console.warn(`[SIAMANG API] Network connection failed for ${url}:`, err);
     throw new ApiError(
       'Tidak dapat terhubung ke server backend (Network/Offline error).',
       undefined,

@@ -8,13 +8,16 @@ use App\Models\DocumentFile;
 use App\Models\Kategori;
 use App\Models\Lowongan;
 use App\Models\Periode;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
 
 class ApplicationService
 {
-    public function getUserApplications($user)
+    public function getUserApplications(User $user)
     {
         return $user->applications()
             ->with([
@@ -28,8 +31,25 @@ class ApplicationService
             ->latest('submitted_at')
             ->get();
     }
+    private function generateRegistrationNumber(Periode $periode): string
+    {
+        $periode = Periode::where('id', $periode->id)
+            ->lockForUpdate()
+            ->firstOrFail();
 
-    public function create($user, array $validated, $request): Application
+        $periode->increment('application_sequence');
+
+        $sequence = $periode->application_sequence;
+
+        $year = $periode->start_date->format('Y');
+
+        return sprintf(
+            'MAG-%s-%06d',
+            $year,
+            $sequence
+        );
+    }
+    public function create(User $user, array $validated, Request $request): Application
     {
         $periode = $this->getActivePeriod();
 
@@ -67,6 +87,13 @@ class ApplicationService
                 $application,
                 $request
             );
+
+            $this->storeProfilePhoto(
+                $user,
+                $application,
+                $request
+            );
+
 
             $this->storeTeamMembers(
                 $application,
@@ -170,41 +197,36 @@ class ApplicationService
     }
 
     private function createApplication(
-        $user,
+        User $user,
         array $validated,
         Periode $periode,
         Bidang $bidang,
         Kategori $kategori,
         Lowongan $lowongan
     ): Application {
+        $registrationNumber = $this->generateRegistrationNumber($periode);
+
         $application = $user->applications()->create([
+            'registration_number' => $registrationNumber,
             'periode_id' => $periode->id,
             'lowongan_id' => $lowongan->id,
             'bidang_id' => $bidang->id,
             'kategori_id' => $kategori->id,
-
             'full_name' => $validated['applicantName'],
             'email' => $validated['email'] ?? $user->email,
             'phone' => $validated['phone'] ?? null,
-            'address' => $validated['address'] ?? null,
+
             'university' => $validated['institution'] ?? null,
             'major' => $validated['major'] ?? null,
             'nim' => $validated['nim'] ?? null,
-
             'skills' => $validated['skills'] ?? null,
             'tools' => $validated['tools'] ?? null,
             'semester' => $validated['semester'] ?? null,
             'project_title' => $validated['projectTitle'] ?? null,
-
             'registration_type' =>
                 $validated['registrationType'] ?? 'Individu',
-
-            'internship_start' =>
-                $validated['startDate'] ?? null,
-
-            'internship_end' =>
-                $validated['endDate'] ?? null,
-
+            'internship_start' => $periode->start_date,
+            'internship_end' => $periode->end_date,
             'status' => 'reviewing',
             'submitted_at' => now(),
             'declared_at' => now(),
@@ -217,8 +239,10 @@ class ApplicationService
 
     private function storeDocuments(
         Application $application,
-        $request
+        Request $request
     ): void {
+        $directory = 'applications/' . $application->registration_number . '/documents';
+
         foreach ($request->file('documents', []) as $index => $document) {
             $file = $document['file'] ?? null;
 
@@ -226,18 +250,13 @@ class ApplicationService
                 continue;
             }
 
-            $path = $file->store(
-                'documents/' . $application->id,
-                'public'
-            );
+            $path = $file->store($directory, 'public');
 
             DocumentFile::create([
                 'application_id' => $application->id,
-
                 'document_type' => $request->input(
                     "documents.$index.document_type"
                 ),
-
                 'original_name' => $file->getClientOriginalName(),
                 'file_path' => $path,
                 'file_size' => $file->getSize(),
@@ -245,6 +264,32 @@ class ApplicationService
                 'status' => 'uploaded',
             ]);
         }
+    }
+    private function storeProfilePhoto(
+        User $user,
+        Application $application,
+        Request $request
+    ): void {
+        $photo = $request->file('photo');
+
+        if (! $photo instanceof UploadedFile) {
+            return;
+        }
+
+        // Hapus foto lama user (kalau ada) supaya tidak menumpuk file yatim
+        // di storage setiap kali user mendaftar ulang/upload foto baru.
+        if ($user->avatar_url) {
+            Storage::disk('public')->delete($user->avatar_url);
+        }
+         $directory = 'applications/' . $application->registration_number . '/profile';
+
+        // Disimpan di folder yang sama dengan berkas dokumen lainnya untuk
+        // aplikasi ini, konsisten dengan storeDocuments().
+        $path = $photo->store($directory, 'public');
+
+        // Hanya PATH yang disimpan ke kolom users.avatar_url — bukan file
+        // binernya. File asli tetap berada di storage/app/public/{$path}.
+        $user->update(['avatar_url' => $path]);
     }
 
     private function storeTeamMembers(
@@ -264,7 +309,7 @@ class ApplicationService
             ]);
         }
     }
-    private function syncUserProfile($user, array $validated): void
+    private function syncUserProfile(User $user, array $validated): void
     {
         $updates = [];
 
@@ -282,6 +327,17 @@ class ApplicationService
 
         if (empty($user->phone) && ! empty($validated['phone'])) {
             $updates['phone'] = $validated['phone'];
+        }
+
+        if (empty($user->semester) && ! empty($validated['semester'])) {
+            $updates['semester'] = $validated['semester'];
+        }
+
+        if (empty($user->skills) && ! empty($validated['skills'])) {
+            $updates['skills'] = $validated['skills'];
+        }
+        if (empty($user->tools) && ! empty($validated['tools'])) {
+            $updates['tools'] = $validated['tools'];
         }
 
         if (! empty($updates)) {

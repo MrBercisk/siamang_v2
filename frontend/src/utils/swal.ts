@@ -1,6 +1,6 @@
 import Swal, { SweetAlertIcon } from 'sweetalert2';
 
-// Custom Styled SweetAlert2 Instance matching SI AMANG theme (#1f877c)
+// Custom Styled SweetAlert2 Instance matching SIAMANG theme (#1f877c)
 const CustomSwal = Swal.mixin({
   customClass: {
     popup: 'rounded-2xl p-6 shadow-2xl border border-slate-100 font-sans',

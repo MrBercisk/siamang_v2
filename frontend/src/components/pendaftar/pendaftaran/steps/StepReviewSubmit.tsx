@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { BiodataState, DocumentFile, RegistrationType, TeamMember } from '../../types';
 import { showWarningAlert } from '../../../../utils/swal';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
+import { formatDate } from '../../../../utils/formatters';
 
 interface StepReviewSubmitProps {
   biodata: BiodataState;
@@ -81,7 +82,7 @@ export function StepReviewSubmit({
               <div><span className="text-slate-400 block font-medium">Nama Lengkap</span><span className="font-bold text-slate-900">{biodata.fullName}</span></div>
               <div><span className="text-slate-400 block font-medium">Email</span><span className="font-bold text-slate-900">{biodata.email}</span></div>
               <div><span className="text-slate-400 block font-medium">No. Handphone</span><span className="font-bold text-slate-900">{biodata.phone}</span></div>
-              <div><span className="text-slate-400 block font-medium">Alamat Lengkap</span><span className="font-bold text-slate-900">{biodata.address}</span></div>
+             
             </div>
 
             <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-100 space-y-2">
@@ -101,8 +102,8 @@ export function StepReviewSubmit({
 
             <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-100 space-y-2">
               <h4 className="font-bold text-[#1f877c] text-xs border-b border-slate-200/80 pb-1.5">Periode Magang</h4>
-              <div><span className="text-slate-400 block font-medium">Tanggal Mulai</span><span className="font-bold text-slate-900">{biodata.startDate}</span></div>
-              <div><span className="text-slate-400 block font-medium">Tanggal Selesai</span><span className="font-bold text-slate-900">{biodata.endDate}</span></div>
+              <div><span className="text-slate-400 block font-medium">Tanggal Mulai</span><span className="font-bold text-slate-900">{formatDate(biodata.startDate)}</span></div>
+              <div><span className="text-slate-400 block font-medium">Tanggal Selesai</span><span className="font-bold text-slate-900">{formatDate(biodata.endDate)}</span></div>
             </div>
           </div>
         </div>

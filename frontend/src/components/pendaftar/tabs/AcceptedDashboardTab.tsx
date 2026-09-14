@@ -203,7 +203,7 @@ export function AcceptedDashboardTab() {
             {/* Item 3 */}
             <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors space-y-1">
               <h4 className="text-xs font-bold text-slate-900">
-                Review Modul SI AMANG
+                Review Modul SIAMANG
               </h4>
               <p className="text-[11px] text-slate-500">
                 25 Juni 2026 - 13:00

@@ -21,13 +21,12 @@ class UserResource extends JsonResource
             'institution' => $this->institution,
             'major' => $this->major,
             'phone' => $this->phone,
-            'address' => $this->address,
+
             'avatar_url' => $this->avatar_url,
             'semester' => $this->semester,
-            'ipk' => $this->ipk,
+
             'skills' => $this->skills,
             'tools' => $this->tools,
-            'nip' => $this->nip,
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
             'current_application' => $this->whenLoaded('currentApplication', fn () => [

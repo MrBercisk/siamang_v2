@@ -21,7 +21,7 @@ export function Footer({ onNavigate }: FooterProps) {
                 <JogjaEmblemLogo className="w-14 h-16 shrink-0 filter drop-shadow-md" />
                 <div>
                   <h3 className="text-2xl font-extrabold text-white tracking-tight leading-none">
-                    SI AMANG
+                    SIAMANG
                   </h3>
                   <p className="text-[11px] font-medium text-white/90 leading-snug mt-1 max-w-xs">
                     Sistem Informasi Aplikasi Magang Dinas Komunikasi Informatika dan Persandian Kota Yogyakarta
@@ -252,7 +252,7 @@ export function Footer({ onNavigate }: FooterProps) {
             {/* Center: Copyright */}
             <div className="text-center">
               <span className="text-xs font-bold text-white block">
-                © 2026 SI AMANG - DISKOMINFOSAN Kota Yogyakarta.
+               SIAMANG V2 © REBUILD 2026 DISKOMINFOSAN
               </span>
               <span className="text-[10px] text-white/80 block mt-0.5">
                 All Right Reserved.

@@ -34,7 +34,7 @@ export function ReviewHeader({
         <div>
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight leading-none">
-              SI AMANG
+              SIAMANG
             </span>
           </div>
           <span className="text-[10px] sm:text-xs text-slate-500 font-medium block mt-0.5">

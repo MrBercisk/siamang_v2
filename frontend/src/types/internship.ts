@@ -53,13 +53,14 @@ export interface ApplicationTeamMember {
 
 export interface ApplicationStatus {
   id: string;
+  registrationNumber: string;
   applicantName: string;
   institution: string;
   major: string;
   nim?: string;
   phone?: string;
   email?: string;
-  address?: string;
+
   projectTitle?: string;
   skills?: string;
   tools?: string;

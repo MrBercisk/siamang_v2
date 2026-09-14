@@ -1,6 +1,13 @@
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { BiodataState } from '../../types';
 import { showWarningAlert } from '../../../../utils/swal';
+import { formatDate } from '../../../../utils/formatters';
+
+interface PeriodeInfo {
+  name: string;
+  internshipStart: string;
+  internshipEnd: string;
+}
 
 interface StepBiodataProps {
   biodata: BiodataState;
@@ -9,6 +16,7 @@ interface StepBiodataProps {
   onPhotoDelete: () => void;
   onNext: () => void;
   lastSavedAt: string | null;
+  periode : PeriodeInfo | null;
 }
 
 export function StepBiodata({
@@ -18,8 +26,29 @@ export function StepBiodata({
   onPhotoDelete,
   onNext,
   lastSavedAt,
+  periode,
 }: StepBiodataProps) {
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+
+  // sync tgl magang sesuai periode aktif
+  useEffect(() => {
+    if (!periode) return;
+
+    if (
+      biodata.startDate === periode.internshipStart &&
+      biodata.endDate === periode.internshipEnd
+    ) {
+      return;
+    }
+
+    setBiodata({
+      ...biodata,
+      startDate: periode.internshipStart,
+      endDate: periode.internshipEnd,
+    });
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periode?.internshipStart, periode?.internshipEnd]);
 
   const handleNext = () => {
     // Hanya field yang ditandai wajib (*) di UI yang divalidasi
@@ -27,6 +56,7 @@ export function StepBiodata({
       { key: 'university', label: 'Nama Kampus / Universitas' },
       { key: 'major', label: 'Program Studi' },
       { key: 'nim', label: 'NIM (Nomor Induk Mahasiswa)' },
+      { key: 'semester', label: 'Semester' },
       { key: 'projectTitle', label: 'Judul/Topik Project' },
       { key: 'skills', label: 'Keahlian' },
       { key: 'tools', label: 'Tools yang Dikuasai' },
@@ -40,46 +70,6 @@ export function StepBiodata({
         `Mohon lengkapi terlebih dahulu: ${missing.map((f) => f.label).join(', ')}.`
       );
       return;
-    }
-
-    // Validasi Periode Magang: tidak boleh kurang dari tanggal hari ini
-    if (biodata.startDate || biodata.endDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (biodata.startDate) {
-        const startDate = new Date(biodata.startDate);
-        if (startDate < today) {
-          showWarningAlert(
-            'Tanggal Mulai Tidak Valid',
-            'Tanggal Mulai magang tidak boleh kurang dari hari ini. Silakan pilih tanggal lain.'
-          );
-          return;
-        }
-      }
-
-      if (biodata.endDate) {
-        const endDate = new Date(biodata.endDate);
-        if (endDate < today) {
-          showWarningAlert(
-            'Tanggal Selesai Tidak Valid',
-            'Tanggal Selesai magang tidak boleh kurang dari hari ini. Silakan pilih tanggal lain.'
-          );
-          return;
-        }
-      }
-
-      if (biodata.startDate && biodata.endDate) {
-        const startDate = new Date(biodata.startDate);
-        const endDate = new Date(biodata.endDate);
-        if (endDate < startDate) {
-          showWarningAlert(
-            'Periode Magang Tidak Valid',
-            'Tanggal Selesai tidak boleh lebih awal dari Tanggal Mulai. Silakan periksa kembali.'
-          );
-          return;
-        }
-      }
     }
 
     onNext();
@@ -98,9 +88,7 @@ export function StepBiodata({
     e.target.value = '';
   };
 
-  const todayString = new Date().toISOString().split('T')[0];
-
-  const formatSavedAt = (iso: string | null) => {
+ const formatSavedAt = (iso: string | null) => {
     if (!iso) return 'Belum ada draft tersimpan';
     const date = new Date(iso);
     const formatted = new Intl.DateTimeFormat('id-ID', {
@@ -116,9 +104,7 @@ export function StepBiodata({
   };
   const savedAtText = formatSavedAt(lastSavedAt);
 
-  // Remount key: berubah setiap kali status foto berubah (bukan cuma
-  // photoUrl-nya), mengikuti pola inputKey di StepBerkas — memaksa
-  // <input type="file"> untuk fully reset setiap upload/ganti/hapus.
+
   const photoInputKey = `photo-${biodata.photoUrl ? 'filled' : 'empty'}-${biodata.photoFileName ?? 'none'}`;
 
   return (
@@ -233,23 +219,14 @@ export function StepBiodata({
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none"
             />
           </div>
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Alamat Lengkap</label>
-            <textarea
-              rows={2}
-              value={biodata.address}
-              onChange={(e) => setBiodata({ ...biodata, address: e.target.value })}
-              placeholder="Masukkan alamat lengkap sesuai KTP"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none"
-            />
-          </div>
+        
         </div>
       </div>
 
       {/* Informasi Akademik */}
       <div className="pt-6 border-t border-slate-100 space-y-4">
         <h2 className="text-base font-bold text-[#1f877c]">Informasi Akademik</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
             <label className="block font-bold text-slate-700 mb-1">
               Nama Kampus / Universitas <span className="text-rose-500">*</span>
@@ -283,6 +260,9 @@ export function StepBiodata({
               onChange={(e) => setBiodata({ ...biodata, semester: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none bg-white"
             >
+              <option value="" disabled>
+                Pilih Semester
+              </option>
               {Array.from({ length: 8 }, (_, i) => i + 1).map((s) => (
                 <option key={s} value={String(s)}>
                   Semester {s}
@@ -290,19 +270,20 @@ export function StepBiodata({
               ))}
             </select>
           </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              NIM (Nomor Induk Mahasiswa) <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={biodata.nim}
+              onChange={(e) => setBiodata({ ...biodata, nim: e.target.value })}
+              placeholder="Masukkan NIM"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none"
+            />
+          </div>
         </div>
-        <div className="text-xs">
-          <label className="block font-bold text-slate-700 mb-1">
-            NIM (Nomor Induk Mahasiswa) <span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={biodata.nim}
-            onChange={(e) => setBiodata({ ...biodata, nim: e.target.value })}
-            placeholder="Masukkan NIM"
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none"
-          />
-        </div>
+       
       </div>
 
       {/* Informasi Project */}
@@ -351,30 +332,28 @@ export function StepBiodata({
       </div>
 
       {/* Periode Magang */}
-      <div className="pt-6 border-t border-slate-100 space-y-4">
+       <div className="pt-6 border-t border-slate-100 space-y-4">
         <h2 className="text-base font-bold text-[#1f877c]">Periode Magang</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Tanggal Mulai</label>
-            <input
-              type="date"
-              min={todayString}
-              value={biodata.startDate}
-              onChange={(e) => setBiodata({ ...biodata, startDate: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none bg-white"
-            />
+        {periode ? (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#E6F7F3] border border-emerald-200 text-xs">
+            <span className="material-symbols-outlined text-[#1f877c]">event</span>
+            <div>
+              <p className="font-bold text-slate-800">
+                {periode.name}
+              </p>
+
+              <p className="font-bold text-slate-800">
+                {formatDate(periode.internshipStart)} &ndash;{' '}
+                {formatDate(periode.internshipEnd)}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Tanggal mengikuti periode magang yang sedang berjalan dan tidak dapat diubah.
+              </p>
+            </div>
           </div>
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Tanggal Selesai</label>
-            <input
-              type="date"
-              min={biodata.startDate || todayString}
-              value={biodata.endDate}
-              onChange={(e) => setBiodata({ ...biodata, endDate: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none bg-white"
-            />
-          </div>
-        </div>
+        ) : (
+          <p className="text-xs text-slate-400 italic">Memuat periode magang aktif...</p>
+        )}
       </div>
 
       {/* Bottom Bar Footer */}

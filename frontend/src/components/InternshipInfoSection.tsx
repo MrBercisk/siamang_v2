@@ -553,7 +553,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                           <span className="material-symbols-outlined text-lg">info</span>
                         </div>
                         <p className="leading-relaxed">
-                          Dokumen Anda sedang dalam proses verifikasi oleh tim kami. Mohon tunggu informasi selanjutnya melalui email dan aplikasi SI AMANG.
+                          Dokumen Anda sedang dalam proses verifikasi oleh tim kami. Mohon tunggu informasi selanjutnya melalui email dan aplikasi SIAMANG.
                         </p>
                       </div>
                     </div>
@@ -703,7 +703,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                         <div className="flex items-center gap-3">
                           <span className="material-symbols-outlined text-xl text-[#1f877c] shrink-0">info</span>
                           <p className="leading-relaxed">
-                            Anda telah diterima sebagai peserta magang. Silakan cek jadwal dan informasi selanjutnya pada aplikasi SI AMANG.
+                            Anda telah diterima sebagai peserta magang. Silakan cek jadwal dan informasi selanjutnya pada aplikasi SIAMANG.
                           </p>
                         </div>
 
@@ -776,7 +776,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                           </span>
                           <h6 className="text-sm font-bold text-[#1e293b] mb-1">Hubungi Mentor</h6>
                           <p className="text-xs text-slate-600 mb-4">
-                            Informasi mentor dan kontak dapat dilihat di SI AMANG.
+                            Informasi mentor dan kontak dapat dilihat di SIAMANG.
                           </p>
                         </div>
                         <button
@@ -784,7 +784,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                           onClick={() => window.open('https://wa.me/628123456789', '_blank')}
                           className="w-fit bg-[#1f877c] hover:bg-[#196e65] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
                         >
-                          <span>Buka SI AMANG</span>
+                          <span>Buka SIAMANG</span>
                           <span className="material-symbols-outlined text-base">chat</span>
                         </button>
                       </div>

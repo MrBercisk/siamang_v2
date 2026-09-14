@@ -79,7 +79,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
                 {type === 'kebijakan-privasi' && 'Kebijakan Privasi'}
                 {type === 'syarat-ketentuan' && 'Syarat & Ketentuan'}
               </h3>
-              <p className="text-xs text-teal-100 font-medium">SI AMANG - Kota Yogyakarta</p>
+              <p className="text-xs text-teal-100 font-medium">SIAMANG - Kota Yogyakarta</p>
             </div>
           </div>
           <button
@@ -109,7 +109,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
                 <h5 className="font-bold text-slate-800 text-base">1. Jam Kerja dan Kehadiran</h5>
                 <ul className="list-disc pl-5 space-y-1 text-slate-600 text-xs sm:text-sm">
                   <li>Jam operasional magang: Senin s.d. Jumat pukul 08.00 - 16.00 WIB.</li>
-                  <li>Peserta wajib melakukan presisi kehadiran melalui sistem SI AMANG setiap hari kerja.</li>
+                  <li>Peserta wajib melakukan presisi kehadiran melalui sistem SIAMANG setiap hari kerja.</li>
                   <li>Toleransi keterlambatan maksimal 15 menit dengan pemberitahuan kepada pembimbing lapangan.</li>
                 </ul>
 
@@ -122,7 +122,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
 
                 <h5 className="font-bold text-slate-800 text-base pt-2">3. Laporan & Evaluasi Magang</h5>
                 <ul className="list-disc pl-5 space-y-1 text-slate-600 text-xs sm:text-sm">
-                  <li>Mengisi Logbook Harian pada dashboard SI AMANG.</li>
+                  <li>Mengisi Logbook Harian pada dashboard SIAMANG.</li>
                   <li>Menyusun Laporan Akhir Magang di bawah bimbingan Pembimbing Lapangan.</li>
                   <li>Sertifikat Magang diterbitkan setelah seluruh laporan disetujui.</li>
                 </ul>
@@ -141,7 +141,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <div className="w-7 h-7 rounded-lg bg-[#005c55] text-white flex items-center justify-center font-bold text-xs mb-2">1</div>
                   <h5 className="font-bold text-slate-800 mb-1">Pengajuan & Seleksi</h5>
-                  <p className="text-xs text-slate-500">Mendaftar online, melengkapi surat pengantar universitas, proposal, dan CV via SI AMANG.</p>
+                  <p className="text-xs text-slate-500">Mendaftar online, melengkapi surat pengantar universitas, proposal, dan CV via SIAMANG.</p>
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
@@ -399,7 +399,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
           {type === 'syarat-ketentuan' && (
             <div className="space-y-3 text-xs sm:text-sm text-slate-600">
               <p>
-                Dengan mendaftar melalui aplikasi SI AMANG, Anda menyetujui seluruh Syarat & Ketentuan pelaksanaan magang di DISKOMINFOSAN Kota Yogyakarta:
+                Dengan mendaftar melalui aplikasi SIAMANG, Anda menyetujui seluruh Syarat & Ketentuan pelaksanaan magang di DISKOMINFOSAN Kota Yogyakarta:
               </p>
 
               <ul className="list-disc pl-5 space-y-1.5">

@@ -18,7 +18,7 @@ export function MentorHeader({ user }: MentorHeaderProps) {
         </div>
         <div>
           <h1 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight tracking-tight">
-            SI AMANG
+            SIAMANG
           </h1>
           <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
             Sistem Informasi Aplikasi Magang <span className="hidden sm:inline">DISKOMINFOSAN Kota Yogyakarta</span>

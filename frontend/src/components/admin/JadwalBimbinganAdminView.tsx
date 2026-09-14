@@ -160,7 +160,7 @@ export const JadwalBimbinganAdminView: React.FC = () => {
     if (formSyncGCal) {
       showSuccessAlert(
         'Jadwal Berhasil Ditambahkan & Tersinkron!',
-        `Agenda "${newEvent.title}" telah tersimpan ke sistem SI AMANG dan otomatis disinkronkan ke Google Calendar DISKOMINFOSAN.`
+        `Agenda "${newEvent.title}" telah tersimpan ke sistem SIAMANG dan otomatis disinkronkan ke Google Calendar DISKOMINFOSAN.`
       );
     } else {
       showSuccessAlert('Jadwal Berhasil Ditambahkan', `Agenda "${newEvent.title}" telah disimpan.`);

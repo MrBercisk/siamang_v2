@@ -32,7 +32,7 @@ export function HeroSection({ onActionClick }: HeroSectionProps) {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl md:text-5xl font-extrabold text-white leading-tight tracking-tight"
           >
-            SI AMANG
+            SIAMANG
           </motion.h1>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -72,7 +72,7 @@ export function HeroSection({ onActionClick }: HeroSectionProps) {
         >
           <img
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHonkZslQ04ZOqMD71l_fl8YJVmK5thc0hnREVB3ZHisTF-GdowoRJYyUTcR8hGHPDy3CbhEPCXwwtOJhCy07nHfzmzKGwWVNNsp0KrCVes-1PNWqdE9XY-9t1m5VZq4_5VNZcvoJEocjl80jzsncPCz1S76blu3yQy93B53eg6dvPeF5fr0UwDfu9joNe1cFLVaY4ggpBKf0BcE836ri8rnuo9JEzeleLIJYg1T4b3FWDQnRrSfC2lQ"
-            alt="SI AMANG Magang Illustration"
+            alt="SIAMANG Magang Illustration"
             className="w-full h-full object-contain object-center z-10 drop-shadow-xl"
             loading="eager"
             decoding="async"

@@ -18,10 +18,8 @@ export interface PendaftarData {
   tanggalDaftar: string;
   status: 'Diterima' | 'Ditolak' | 'Verifikasi';
   tipeDaftar?: 'Kelompok' | 'Individu';
-  alamat?: string;
   jurusan?: string;
   semester?: string;
-  ipk?: string;
   keahlian?: string;
   alasanPenolakan?: string;
   berkas: {

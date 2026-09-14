@@ -21,6 +21,7 @@ class Periode extends Model
         'duration_info',
         'system_type',
         'is_active',
+         'application_sequence',
     ];
 
     protected function casts(): array
