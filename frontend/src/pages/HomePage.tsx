@@ -6,9 +6,11 @@ import { ApplicationModal } from '../components/ApplicationModal';
 import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus } from '../types/internship';
 import { User } from '../types/auth';
 import { PageType } from '../types/navigation';
+import { LowonganDetail } from '../hooks/useInternshipData';
 
 interface HomePageProps {
   categories: InternshipCategory[];
+  lowongans: LowonganDetail[];
   schedules: TimelineSchedule[];
   requirements: ApplicationRequirement[];
   applications: ApplicationStatus[];
@@ -26,6 +28,7 @@ interface HomePageProps {
 
 export const HomePage = memo(function HomePage({
   categories,
+  lowongans,
   schedules,
   requirements,
   applications,
@@ -53,8 +56,9 @@ export const HomePage = memo(function HomePage({
       />
 
       {/* Internship Detailed Info & Timeline Section – no wrapper motion to reduce observer count */}
-      <InternshipInfoSection
+     <InternshipInfoSection
         categories={categories}
+        lowongans={lowongans}
         schedules={schedules}
         requirements={requirements}
         applications={applications}

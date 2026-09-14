@@ -395,4 +395,11 @@ class ApplicationService
             $user->update($updates);
         }
     }
+    public function findForTracking(string $registrationNumber, string $email): ?Application
+    {
+        return Application::where('registration_number', $registrationNumber)
+            ->where('email', $email)
+            ->with(['periode', 'bidang', 'kategori', 'lowongan'])
+            ->first();
+    }
 }

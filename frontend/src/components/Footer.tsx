@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FooterModal, FooterModalType } from './FooterModal';
-import { JogjaEmblemLogo } from './JogjaEmblemLogo';
+import logoPemkot from '../assets/logo-pemkot.webp';
 
 interface FooterProps {
   onNavigate: (page: 'home' | 'info' | 'register' | 'login' | 'dashboard') => void;
@@ -18,7 +18,13 @@ export function Footer({ onNavigate }: FooterProps) {
             {/* Column 1: Brand & Logo (lg:col-span-4) */}
             <div className="lg:col-span-4 space-y-4">
               <div className="flex items-center gap-3.5">
-                <JogjaEmblemLogo className="w-14 h-16 shrink-0 filter drop-shadow-md" />
+                <div className="w-16 h-16 flex items-center justify-center shrink-0">
+                  <img
+                    src={logoPemkot}
+                    alt="Logo Kota Yogyakarta"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <div>
                   <h3 className="text-2xl font-extrabold text-white tracking-tight leading-none">
                     SIAMANG

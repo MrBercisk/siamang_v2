@@ -5,6 +5,15 @@ export interface InternshipCategory {
   icon: string;
   avatarUrl?: string;
   items: string[];
+
+  detailKebutuhan?: string;
+  bidangName?: string;
+  kategoriName?: string;
+  fieldId?: string;
+  kategoriId?: string;
+  kuota?: number;
+  filled?: number;
+  isActive?: boolean;
 }
 
 export interface TimelineSchedule {

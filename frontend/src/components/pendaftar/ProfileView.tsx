@@ -6,6 +6,7 @@ import {
   showEditConfirmAlert,
   showToast,
 } from '../../utils/swal';
+import { resolveStorageUrl } from '@/src/lib/api';
 
 interface ProfileViewProps {
   user: User;
@@ -25,7 +26,9 @@ const formatAccountCreated = (iso?: string): string =>
 
 export function ProfileView({ user }: ProfileViewProps) {
   // Avatar state — diinisialisasi dari data user asli, bukan selalu null.
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatar_url || null);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(
+      resolveStorageUrl(user.avatar_url)
+    );
 
   // Personal details state — diisi dari data user asli. Field opsional yang
   // belum diisi user ditampilkan sebagai string kosong, lalu di tampilan

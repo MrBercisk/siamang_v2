@@ -2,9 +2,12 @@ import { memo, useState } from 'react';
 import { InternshipCategory, TimelineSchedule, ApplicationRequirement, ApplicationStatus } from '../types/internship';
 import { TimelineCard } from './TimelineCard';
 import { NoticeBar } from './NoticeBar';
+import { LowonganDetail } from '../hooks/useInternshipData';
+
 
 interface InternshipInfoSectionProps {
   categories: InternshipCategory[];
+  lowongans: LowonganDetail[]; 
   schedules: TimelineSchedule[];
   requirements: ApplicationRequirement[];
   applications: ApplicationStatus[];
@@ -13,36 +16,6 @@ interface InternshipInfoSectionProps {
 }
 
 // Static data defined outside component to avoid re-creation on every render
-const CUSTOM_BIDANG_LIST = [
-  {
-    id: 'dev1',
-    categoryName: 'Bidang Sistem Informasi dan Statistik',
-    title: 'Pengembangan Perangkat Lunak',
-    badge: 'SIM CUTI',
-    description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
-    slotText: '2 Mahasiswa',
-    icon: 'code'
-  },
-  {
-    id: 'dev2',
-    categoryName: 'Bidang Sistem Informasi dan Statistik',
-    title: 'Pengembangan Perangkat Lunak',
-    badge: 'SIM CUTI',
-    description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
-    slotText: '2 Mahasiswa',
-    icon: 'code'
-  },
-  {
-    id: 'dev3',
-    categoryName: 'Bidang Sistem Informasi dan Statistik',
-    title: 'Pengembangan Perangkat Lunak',
-    badge: 'SIM CUTI',
-    description: 'Pengembangan dan pemeliharaan aplikasi internal DISKOMINFOSAN Kota Yogyakarta',
-    slotText: '2 Mahasiswa',
-    icon: 'code'
-  }
-];
-
 const CUSTOM_REQUIREMENTS_LIST = [
   {
     id: 'req1',
@@ -72,18 +45,16 @@ const CUSTOM_REQUIREMENTS_LIST = [
 ];
 
 export const InternshipInfoSection = memo(function InternshipInfoSection({
+  categories,
   schedules,
   onApplyCategory,
   onNavigateRegister,
 }: InternshipInfoSectionProps) {
   const [activeTab, setActiveTab] = useState<'timeline' | 'bidang' | 'persyaratan' | 'status'>('bidang');
 
-  // Search state for Status Pendaftaran
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDemoStatus, setSelectedDemoStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
 
-  // Use module-level constants instead of re-creating on each render
-  const customBidangList = CUSTOM_BIDANG_LIST;
   const customRequirementsList = CUSTOM_REQUIREMENTS_LIST;
 
   return (
@@ -176,7 +147,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
             </div>
           )}
 
-          {/* TAB 2: BIDANG TERSEDIA (Image 1) */}
+          {/* TAB 2: BIDANG TERSEDIA */}
           {activeTab === 'bidang' && (
             <div className="space-y-8">
               {/* Section Header */}
@@ -194,11 +165,17 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                 </div>
               </div>
 
-              {/* Grid Cards (3 Column Layout) */}
+              {/* Grid Cards — satu kartu per Lowongan/Proyek, sesuai data tabel lowongan */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {customBidangList.map((item) => (
+                {categories.length === 0 && (
+                  <div className="md:col-span-3 text-center py-10 text-sm text-slate-400">
+                    Belum ada lowongan magang yang tersedia saat ini.
+                  </div>
+                )}
+
+                {categories.map((cat) => (
                   <div
-                    key={item.id}
+                    key={cat.id}
                     className="bg-white rounded-2xl border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:shadow-md transition-shadow"
                   >
                     <div>
@@ -206,33 +183,58 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                       <div className="flex items-start gap-3.5 mb-3">
                         <div className="w-11 h-11 rounded-2xl bg-[#D1FAE5] text-[#1f877c] flex items-center justify-center shrink-0 shadow-2xs">
                           <span className="material-symbols-outlined text-xl font-bold">
-                            {item.icon}
+                            {cat.icon || 'work'}
                           </span>
                         </div>
                         <div className="flex-1">
-                          <span className="text-[11px] font-medium text-slate-400 block mb-0.5">
-                            {item.categoryName}
-                          </span>
+                          {cat.bidangName && (
+                            <span className="text-[11px] font-medium text-slate-400 block mb-0.5">
+                              {cat.bidangName}
+                            </span>
+                          )}
                           <h4 className="text-sm sm:text-base font-bold text-[#1e293b] leading-tight">
-                            {item.title}
+                            {cat.title}
                           </h4>
-                          <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#1f877c] bg-[#D1FAE5] border border-emerald-200">
-                            {item.badge}
-                          </span>
+                          {cat.kategoriName && (
+                            <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#1f877c] bg-[#D1FAE5] border border-emerald-200">
+                              {cat.kategoriName}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Description */}
+                      {/* Description (definisi) */}
                       <p className="text-xs text-slate-600 leading-relaxed mt-4">
-                        {item.description}
+                        {cat.description}
                       </p>
+
+                      {/* Detail Kebutuhan */}
+                      {cat.detailKebutuhan && (
+                        <p className="text-[11px] text-slate-500 leading-relaxed mt-2 italic">
+                          {cat.detailKebutuhan}
+                        </p>
+                      )}
                     </div>
 
                     {/* Footer Row */}
                     <div className="border-t border-slate-100 mt-6 pt-4 flex items-center justify-between">
                       <span className="text-xs text-slate-500">Slot Tersedia</span>
-                      <span className="text-xs font-bold text-[#1f877c]">{item.slotText}</span>
+                      <span className="text-xs font-bold text-[#1f877c]">
+                        {typeof cat.kuota === 'number'
+                          ? `${Math.max(cat.kuota - (cat.filled ?? 0), 0)} dari ${cat.kuota}`
+                          : 'Belum ditentukan'}
+                      </span>
                     </div>
+
+                    {onApplyCategory && (
+                      <button
+                        type="button"
+                        onClick={() => onApplyCategory(cat)}
+                        className="mt-4 w-full bg-[#1f877c] hover:bg-[#196e65] text-white font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Daftar Lowongan Ini
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -267,7 +269,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
             </div>
           )}
 
-          {/* TAB 3: PERSYARATAN (Image 2) */}
+          {/* TAB 3: PERSYARATAN */}
           {activeTab === 'persyaratan' && (
             <div className="space-y-8">
               {/* Section Header */}
@@ -325,7 +327,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
             </div>
           )}
 
-          {/* TAB 4: STATUS PENDAFTARAN (Image 3, 4, 5, 6) */}
+          {/* TAB 4: STATUS PENDAFTARAN */}
           {activeTab === 'status' && (
             <div className="space-y-8">
               {/* Section Header */}
@@ -343,7 +345,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                 </div>
               </div>
 
-              {/* Search Card & Illustration (Image 3) */}
+              {/* Search Card & Illustration */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs">
                 {/* Left Search Form (7 cols) */}
                 <div className="lg:col-span-7 space-y-4">
@@ -443,7 +445,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
 
               {/* DYNAMIC RESULT CARDS ACCORDING TO SELECTED STATUS */}
 
-              {/* STATE 1: PENDING ADMINISTRASI (Image 4) */}
+              {/* STATE 1: PENDING ADMINISTRASI */}
               {selectedDemoStatus === 'pending' && (
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -598,7 +600,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                 </div>
               )}
 
-              {/* STATE 2: DITERIMA (Image 5) */}
+              {/* STATE 2: DITERIMA */}
               {selectedDemoStatus === 'accepted' && (
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -793,7 +795,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
                 </div>
               )}
 
-              {/* STATE 3: TIDAK DITERIMA / DITOLAK (Image 6) */}
+              {/* STATE 3: TIDAK DITERIMA / DITOLAK */}
               {selectedDemoStatus === 'rejected' && (
                 <div className="space-y-6">
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs grid grid-cols-1 lg:grid-cols-12 gap-8">
