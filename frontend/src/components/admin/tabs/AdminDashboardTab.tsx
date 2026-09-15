@@ -1,6 +1,136 @@
-import { monthlyData } from '../../../data/adminSampleData';
+import { useEffect, useMemo, useState } from 'react';
+import { apiRequest, ApiError } from '../../../lib/api';
+import { formatDate } from '../../../utils/formatters';
+
+
+type AdminApplicationStatus = 'pending' | 'reviewing' | 'accepted' | 'rejected';
+
+interface ApiCollection<T> {
+  data: T[];
+}
+
+interface BackendAdminApplication {
+  id: string | number;
+  applicantName: string;
+  fieldName?: string | null;
+  kategoriName?: string | null;
+  status: AdminApplicationStatus;
+  submittedAt?: string | null;
+  mentor?: { id: number; fullName: string } | null;
+}
+
+interface BackendBidang {
+  id: number;
+  name: string;
+  status?: string | null;
+}
+
+interface BackendKategori {
+  id: number;
+  name: string;
+}
+
+interface MonthlyBucket {
+  month: string;
+  accepted: number;
+  rejected: number;
+}
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
 export function AdminDashboardTab() {
+  const [applications, setApplications] = useState<BackendAdminApplication[]>([]);
+  const [bidangs, setBidangs] = useState<BackendBidang[]>([]);
+  const [kategoris, setKategoris] = useState<BackendKategori[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [appsRes, bidangsRes, kategorisRes] = await Promise.all([
+          apiRequest<ApiCollection<BackendAdminApplication>>('/admin/applications'),
+          apiRequest<ApiCollection<BackendBidang>>('/bidangs'),
+          apiRequest<ApiCollection<BackendKategori>>('/kategoris'),
+        ]);
+
+        if (cancelled) return;
+
+        setApplications(appsRes.data ?? []);
+        setBidangs(bidangsRes.data ?? []);
+        setKategoris(kategorisRes.data ?? []);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : 'Gagal memuat data dashboard.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const totalPendaftar = applications.length;
+  const totalDiterima = useMemo(
+    () => applications.filter((app) => app.status === 'accepted').length,
+    [applications]
+  );
+  const totalBidang = bidangs.length;
+  const totalKategori = kategoris.length;
+
+  const monthlyData: MonthlyBucket[] = useMemo(() => {
+    return MONTH_LABELS.map((month, idx) => {
+      const itemsInMonth = applications.filter((app) => {
+        if (!app.submittedAt) return false;
+        return new Date(app.submittedAt).getMonth() === idx;
+      });
+      return {
+        month,
+        accepted: itemsInMonth.filter((app) => app.status === 'accepted').length,
+        rejected: itemsInMonth.filter((app) => app.status === 'rejected').length,
+      };
+    });
+  }, [applications]);
+
+  const chartMax = Math.max(8, ...monthlyData.flatMap((m) => [m.accepted, m.rejected]));
+
+  const recentApplications = useMemo(
+    () =>
+      [...applications]
+        .sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime())
+        .slice(0, 3),
+    [applications]
+  );
+
+  const assignedApplications = useMemo(
+    () => applications.filter((app) => app.mentor).slice(0, 3),
+    [applications]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-sm font-medium text-slate-500">
+        Memuat data dashboard...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-24 text-sm font-medium text-red-500">
+        Gagal memuat data: {error}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-in fade-in">
 
@@ -11,7 +141,7 @@ export function AdminDashboardTab() {
         <div className="bg-[#E0F2FE] border border-sky-200 rounded-2xl p-5 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-3xl font-extrabold text-[#0284C7] block">
-              21
+              {totalPendaftar}
             </span>
             <span className="text-xs font-bold text-[#0369A1] mt-2 block">
               Total Pendaftar
@@ -26,7 +156,7 @@ export function AdminDashboardTab() {
         <div className="bg-[#DCFCE7] border border-emerald-200 rounded-2xl p-5 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-3xl font-extrabold text-[#16A34A] block">
-              21
+              {totalDiterima}
             </span>
             <span className="text-xs font-bold text-[#15803D] mt-2 block">
               Pendaftar Diterima
@@ -41,7 +171,7 @@ export function AdminDashboardTab() {
         <div className="bg-[#FEF3C7] border border-amber-200 rounded-2xl p-5 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-3xl font-extrabold text-[#D97706] block">
-              21
+              {totalBidang}
             </span>
             <span className="text-xs font-bold text-[#B45309] mt-2 block">
               Total Bidang
@@ -56,7 +186,7 @@ export function AdminDashboardTab() {
         <div className="bg-[#E2E8F0] border border-slate-300 rounded-2xl p-5 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-3xl font-extrabold text-[#334155] block">
-              21
+              {totalKategori}
             </span>
             <span className="text-xs font-bold text-[#1E293B] mt-2 block">
               Kategori Tersedia
@@ -93,10 +223,10 @@ export function AdminDashboardTab() {
           <div className="h-64 flex items-end justify-between gap-1.5 pt-6 pb-2 px-2 border-b border-slate-200 relative">
 
             {/* Y-Axis Grid Lines */}
-            <div className="absolute inset-x-0 top-0 border-b border-slate-100 text-[10px] text-slate-400 pl-1">8</div>
-            <div className="absolute inset-x-0 top-1/4 border-b border-slate-100 text-[10px] text-slate-400 pl-1">6</div>
-            <div className="absolute inset-x-0 top-2/4 border-b border-slate-100 text-[10px] text-slate-400 pl-1">4</div>
-            <div className="absolute inset-x-0 top-3/4 border-b border-slate-100 text-[10px] text-slate-400 pl-1">2</div>
+            <div className="absolute inset-x-0 top-0 border-b border-slate-100 text-[10px] text-slate-400 pl-1">{chartMax}</div>
+            <div className="absolute inset-x-0 top-1/4 border-b border-slate-100 text-[10px] text-slate-400 pl-1">{Math.round(chartMax * 0.75)}</div>
+            <div className="absolute inset-x-0 top-2/4 border-b border-slate-100 text-[10px] text-slate-400 pl-1">{Math.round(chartMax * 0.5)}</div>
+            <div className="absolute inset-x-0 top-3/4 border-b border-slate-100 text-[10px] text-slate-400 pl-1">{Math.round(chartMax * 0.25)}</div>
             <div className="absolute inset-x-0 bottom-0 text-[10px] text-slate-400 pl-1">0</div>
 
             {/* Bars Mapping */}
@@ -106,13 +236,13 @@ export function AdminDashboardTab() {
                   {/* Accepted Bar (Purple) */}
                   <div
                     className="bg-[#8B5CF6] rounded-t-xs w-2.5 sm:w-3.5 transition-all group-hover:brightness-110"
-                    style={{ height: `${(item.accepted / 8) * 100}%` }}
+                    style={{ height: `${(item.accepted / chartMax) * 100}%` }}
                     title={`${item.month} Diterima: ${item.accepted}`}
                   />
                   {/* Rejected Bar (Pink/Coral) */}
                   <div
                     className="bg-[#F87171] rounded-t-xs w-2.5 sm:w-3.5 transition-all group-hover:brightness-110"
-                    style={{ height: `${(item.rejected / 8) * 100}%` }}
+                    style={{ height: `${(item.rejected / chartMax) * 100}%` }}
                     title={`${item.month} Tidak Diterima: ${item.rejected}`}
                   />
                 </div>
@@ -136,55 +266,49 @@ export function AdminDashboardTab() {
           </div>
         </div>
 
-        {/* Right Side Cards (4 Cols): Agenda Mendatang & Mahasiswa Bimbingan */}
+        {/* Right Side Cards (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* Card 1: Agenda Mendatang */}
+          {/* Card 1: Pendaftar Terbaru (pengganti Agenda Mendatang, belum ada endpoint agenda) */}
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Agenda Mendatang</h3>
+            <h3 className="text-base font-bold text-slate-900">Pendaftar Terbaru</h3>
 
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 space-y-1">
-                <h4 className="text-xs font-bold text-slate-900">
-                  Bimbingan dengan Mentor
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  2 Juni 2026 - 09:00
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 space-y-1">
-                <h4 className="text-xs font-bold text-slate-900">
-                  Bimbingan dengan Mentor
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  2 Juni 2026 - 09:00
-                </p>
-              </div>
+              {recentApplications.length === 0 && (
+                <p className="text-xs text-slate-400">Belum ada pendaftar.</p>
+              )}
+              {recentApplications.map((app) => (
+                <div key={app.id} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/70 space-y-1">
+                  <h4 className="text-xs font-bold text-slate-900">
+                    {app.applicantName}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    {app.submittedAt ? formatDate(app.submittedAt) : '-'}
+                    {app.fieldName ? ` · ${app.fieldName}` : ''}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Card 2: Mahasiswa Bimbingan */}
+          {/* Card 2: Mentor Ditugaskan (pengganti Mahasiswa Bimbingan, tanpa progress % karena belum ada di API) */}
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Mahasiswa Bimbingan</h3>
+            <h3 className="text-base font-bold text-slate-900">Mentor Ditugaskan</h3>
 
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden shrink-0 border border-slate-300">
-                    <img
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                      alt="Leona Strive"
-                      className="w-full h-full object-cover"
-                    />
+              {assignedApplications.length === 0 && (
+                <p className="text-xs text-slate-400">Belum ada Mentor yang ditugaskan.</p>
+              )}
+              {assignedApplications.map((app) => (
+                <div key={app.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden shrink-0 border border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500">
+                    {app.applicantName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-xs font-bold text-slate-900">Leona Strive</h4>
-                    <div className="w-full bg-slate-100 rounded-full h-3.5 p-0.5 mt-1 border border-slate-200">
-                      <div className="bg-[#1f877c] h-full rounded-full text-[9px] text-white font-bold flex items-center justify-center" style={{ width: '20%' }}>
-                        20%
-                      </div>
-                    </div>
+                    <h4 className="text-xs font-bold text-slate-900">{app.applicantName}</h4>
+                    <p className="text-[10px] text-slate-500">
+                      Mentor: {app.mentor?.fullName || '-'}
+                    </p>
                   </div>
                 </div>
               ))}
