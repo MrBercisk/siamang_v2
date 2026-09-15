@@ -21,7 +21,7 @@ export function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   
   const { user, isLoading: authLoading, error: authError, login, register, logout } = useAuth();
-  const { categories, schedules, requirements, applications, submitApplication } = useInternshipData(Boolean(user));
+  const { categories, schedules, lowongans, requirements, applications, submitApplication } = useInternshipData(Boolean(user));
 
   const handleNavigate = (page: PageType) => {
     setCurrentPage(page);
@@ -80,6 +80,7 @@ export function App() {
         {currentPage === 'home' && (
           <HomePage
             categories={categories}
+            lowongans={lowongans}
             schedules={schedules}
             requirements={requirements}
             applications={applications}
@@ -94,6 +95,7 @@ export function App() {
         {currentPage === 'info' && (
           <InfoPage
             categories={categories}
+            lowongans={lowongans}
             schedules={schedules}
             requirements={requirements}
             applications={applications}

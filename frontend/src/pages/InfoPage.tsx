@@ -4,9 +4,11 @@ import { InternshipInfoSection } from '../components/InternshipInfoSection';
 import { ApplicationModal } from '../components/ApplicationModal';
 import { User } from '../types/auth';
 import { PageType } from '../types/navigation';
+import { LowonganDetail } from '../hooks/useInternshipData';
 
 interface InfoPageProps {
   categories: InternshipCategory[];
+  lowongans: LowonganDetail[];
   schedules: TimelineSchedule[];
   requirements: ApplicationRequirement[];
   applications: ApplicationStatus[];
@@ -24,6 +26,7 @@ interface InfoPageProps {
 
 export function InfoPage({
   categories,
+  lowongans,
   schedules,
   requirements,
   applications,
@@ -43,6 +46,7 @@ export function InfoPage({
     <div className="min-h-screen bg-[#f7f9fb] py-8">
       <InternshipInfoSection
         categories={categories}
+        lowongans={lowongans}
         schedules={schedules}
         requirements={requirements}
         applications={applications}

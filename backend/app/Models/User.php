@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -16,27 +16,15 @@ use Laravel\Sanctum\HasApiTokens;
     'email', 
     'password', 
     'role', 
-    'nim', 
-    'nip',
-    'institution', 
-    'major', 
     'phone',
-    'semester',
-    'skills',
-    'tools',
     'avatar_url'
-    ])]
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -53,5 +41,31 @@ class User extends Authenticatable
     public function currentApplication()
     {
         return $this->hasOne(Application::class)->latestOfMany();
+    }
+
+    public function kategoriDiampu()
+    {
+        return $this->belongsToMany(Kategori::class, 'kategori_mentor', 'user_id', 'kategori_id')
+            ->withTimestamps();
+    }
+
+    public function bimbinganSebagaiMentor()
+    {
+        return $this->hasMany(Bimbingan::class, 'mentor_id');
+    }
+
+    public function scopeMentors($query)
+    {
+        return $query->where('role', 'mentor');
+    }
+
+    public function scopePendaftar($query)
+    {
+        return $query->where('role', 'pendaftar');
+    }
+
+    public function scopeAdmins($query)
+    {
+        return $query->where('role', 'admin');
     }
 }
