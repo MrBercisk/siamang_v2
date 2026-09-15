@@ -36,6 +36,13 @@ return new class extends Migration
 
     public function up(): void
     {
+        // ENUM ala MySQL tidak dikenal sqlite (dipakai saat testing/lokal).
+        // Di sqlite, kolom ini sudah berbentuk TEXT biasa sejak migration
+        // pembuatan tabel awal — jadi tidak ada yang perlu di-ALTER di sana.
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Laravel/Doctrine tidak punya cara native untuk ALTER kolom ENUM,
         // jadi kita pakai raw SQL. MODIFY COLUMN aman untuk MySQL/MariaDB
         // karena tidak mengubah data yang sudah ada, hanya menambah pilihan.
@@ -48,6 +55,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Sebelum menyempitkan enum lagi, pastikan tidak ada baris yang
         // sudah memakai nilai 'video_perkenalan' — kalau ada, migration
         // down ini akan gagal (sengaja, supaya tidak diam-diam kehilangan data).

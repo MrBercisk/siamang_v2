@@ -18,6 +18,7 @@ class Application extends Model
         'lowongan_id',
         'bidang_id',
         'kategori_id',
+        'mentor_id',
         'full_name',
         'email',
         'phone',
@@ -33,7 +34,6 @@ class Application extends Model
         'internship_end',
         'status',
         'admin_notes',
-        'mentor_id',
         'submitted_at',
         'declared_at',
         'reviewed_at',
@@ -77,11 +77,6 @@ class Application extends Model
         return $this->belongsTo(Kategori::class);
     }
 
-    public function mentor()
-    {
-        return $this->belongsTo(User::class, 'mentor_id');
-    }
-
     public function teamMembers()
     {
         return $this->hasMany(TeamMember::class);
@@ -95,5 +90,11 @@ class Application extends Model
     public function bimbingan()
     {
         return $this->hasOne(Bimbingan::class);
+    }
+
+    // Akses mentor lewat relasi bimbingan
+    public function mentor()
+    {
+        return $this->belongsTo(User::class, 'mentor_id');
     }
 }

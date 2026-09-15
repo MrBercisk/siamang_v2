@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class ApplicationService
 {
@@ -401,5 +402,112 @@ class ApplicationService
             ->where('email', $email)
             ->with(['periode', 'bidang', 'kategori', 'lowongan'])
             ->first();
+    }
+
+    /* admin */
+    public function getAllApplications(array $filters = [])
+    {
+        $query = Application::with([
+            'user',
+            'periode',
+            'bidang',
+            'kategori',
+            'lowongan',
+            'documentFiles',
+            'teamMembers',
+            'bimbingan.mentor',
+        ]);
+
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (! empty($filters['periode_id'])) {
+            $query->where('periode_id', $filters['periode_id']);
+        }
+
+        if (! empty($filters['kategori_id'])) {
+            $query->where('kategori_id', $filters['kategori_id']);
+        }
+
+        return $query->latest('submitted_at')->paginate($filters['per_page'] ?? 20);
+    }
+
+    public function findByIdForAdmin(int $id): Application
+    {
+        return Application::with([
+            'user',
+            'periode',
+            'bidang',
+            'kategori',
+            'lowongan',
+            'documentFiles',
+            'teamMembers',
+            'bimbingan.mentor',
+        ])->findOrFail($id);
+    }
+
+    /**
+     * Assign / ganti mentor SEBELUM application diterima. Ini hanya menyimpan
+     * mentor_id di kolom Application — ApplicationObserver yang nanti akan
+     * memakainya untuk membuat Bimbingan saat status berubah jadi 'accepted'.
+     */
+    public function assignMentor(Application $application, int $mentorId): Application
+    {
+        $mentor = User::find($mentorId);
+
+        if (! $mentor || $mentor->role !== 'mentor') {
+            throw ValidationException::withMessages([
+                'mentor_id' => ['User yang dipilih bukan mentor.'],
+            ]);
+        }
+
+        $application->update(['mentor_id' => $mentorId]);
+
+        // Kalau bimbingan sudah terbentuk (application sudah accepted
+        // sebelumnya), sinkronkan juga mentor di sana — supaya tidak ada
+        // celah dua sumber data yang beda saat admin ganti mentor di
+        // tengah jalan.
+        if ($application->bimbingan) {
+            $application->bimbingan->update(['mentor_id' => $mentorId]);
+        }
+
+        return $application->fresh(['bimbingan.mentor']);
+    }
+
+    /**
+     * Ambil daftar mentor yang tersedia untuk kategori dari application ini.
+     * Saat ini masih ambil semua user berrole mentor — ganti query ini kalau
+     * nanti pivot kategori_mentor sudah dibuat.
+     */
+    public function getAvailableMentors(Application $application): Collection
+    {
+        return User::where('role', 'mentor')->get(['id', 'name', 'email', 'avatar_url']);
+    }
+
+    /**
+     * Update status application. Validasi mentor_id untuk status 'accepted'
+     * sudah ditangani ApplicationObserver::updating() — di sini cukup pastikan
+     * mentor_id ter-set dulu kalau dikirim bersamaan dengan request ini.
+     */
+    public function updateStatus(Application $application, array $validated): Application
+    {
+        if (! empty($validated['mentor_id'])) {
+            $application->mentor_id = $validated['mentor_id'];
+        }
+
+        $application->status = $validated['status'];
+
+        if (! empty($validated['admin_notes'])) {
+            $application->admin_notes = $validated['admin_notes'];
+        }
+
+        if ($application->status === 'reviewing' && ! $application->reviewed_at) {
+            $application->reviewed_at = now();
+        }
+
+        $application->save();
+
+        return $application->fresh(['bimbingan.mentor', 'user']);
     }
 }

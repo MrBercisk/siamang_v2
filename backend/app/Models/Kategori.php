@@ -26,4 +26,10 @@ class Kategori extends Model
     {
         return $this->hasMany(Application::class);
     }
+
+    public function mentors()
+    {
+        return $this->belongsToMany(User::class, 'kategori_mentor', 'kategori_id', 'user_id')
+            ->withTimestamps();
+    }
 }
