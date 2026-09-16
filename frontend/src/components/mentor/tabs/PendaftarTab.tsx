@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DetailPendaftarView } from '../../../components/mentor/DetailPendaftarView';
-import { PendaftarData } from '../../../components/mentor/DetailDataModal';
+import { PendaftarData } from '../../../types/pendaftar';
 import { initialPendaftarList } from '../../../data/mentorSampleData';
 
 type PendaftarFilter = 'all' | 'verifikasi' | 'diterima' | 'ditolak';

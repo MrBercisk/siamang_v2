@@ -4,19 +4,21 @@ import { showSuccessAlert, showToast, showConfirmAlert } from '../../../utils/sw
 import { BidangFormValues, BidangItem, BidangStatus } from '../../../types/bidang';
 
 /**
- * Kontrak API ini dikonfirmasi langsung dari App\Http\Controllers\Api\BidangController
- * dan App\Models\Bidang:
- * - GET  /bidangs        -> index() hanya mengembalikan status 'Aktif' secara default;
- *                           admin perlu ?all=1 untuk melihat semua (termasuk Nonaktif).
- * - POST /bidangs        -> store(), fillable: name, status. Response TIDAK menyertakan
- *                           kategori_count (model baru dibuat tanpa withCount).
- * - PUT/PATCH /bidangs/{id} -> update(), field 'sometimes' jadi aman untuk partial update.
- *                           Response juga TIDAK menyertakan kategori_count.
- * - DELETE /bidangs/{id} -> ditolak (422) kalau bidang masih punya kategori terkait;
- *                           pesan errornya sudah deskriptif dari backend, cukup diteruskan.
+ * Kontrak API ini dikonfirmasi dari App\Http\Controllers\Api\BidangController
+ * dan App\Models\Bidang (sudah pakai SoftDeletes, cascade ke kategori):
+ * - GET    /bidangs              -> index(), default hanya status 'Aktif';
+ *                                   admin perlu ?all=1 untuk lihat semua.
+ * - GET    /bidangs-trashed      -> trashed(), daftar bidang di Sampah.
+ * - POST   /bidangs              -> store().
+ * - PUT    /bidangs/{id}         -> update(), 'sometimes' jadi aman partial.
+ * - DELETE /bidangs/{id}         -> destroy(), SOFT delete (pindah ke Sampah),
+ *                                   kategori terkait ikut diarsipkan otomatis.
+ * - PATCH  /bidangs/{id}/restore -> restore(), pulihkan bidang + kategorinya.
+ * - DELETE /bidangs/{id}/force   -> forceDelete(), hapus permanen (ditolak
+ *                                   422 kalau masih ada kategori terkait).
  *
- * Karena response create/update tidak membawa kategori_count, categoryCount di state lokal
- * dipertahankan dari nilai sebelumnya (bukan ditimpa 0) supaya angka di tabel tidak salah.
+ * Response create/update TIDAK menyertakan kategori_count, jadi nilai lama di
+ * state dipertahankan (bukan ditimpa 0) supaya angka di tabel tidak salah.
  */
 
 interface ApiCollection<T> {
@@ -32,6 +34,7 @@ interface BackendBidang {
   name: string;
   status: BidangStatus;
   kategori_count?: number;
+  deleted_at?: string | null;
 }
 
 function mapBidang(bidang: BackendBidang): BidangItem {
@@ -40,6 +43,7 @@ function mapBidang(bidang: BackendBidang): BidangItem {
     name: bidang.name,
     status: bidang.status,
     categoryCount: bidang.kategori_count ?? 0,
+    deletedAt: bidang.deleted_at ?? null,
   };
 }
 
@@ -55,6 +59,10 @@ export function useBidangAdmin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [trashed, setTrashed] = useState<BidangItem[]>([]);
+  const [trashedLoading, setTrashedLoading] = useState(false);
+  const [trashedError, setTrashedError] = useState<string | null>(null);
+
   const fetchBidangs = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -66,6 +74,19 @@ export function useBidangAdmin() {
       setError(err instanceof ApiError ? err.message : 'Gagal memuat data bidang.');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchTrashed = useCallback(async () => {
+    setTrashedLoading(true);
+    setTrashedError(null);
+    try {
+      const res = await apiRequest<ApiCollection<BackendBidang>>('/bidangs-trashed');
+      setTrashed(res.data.map(mapBidang));
+    } catch (err) {
+      setTrashedError(err instanceof ApiError ? err.message : 'Gagal memuat data sampah.');
+    } finally {
+      setTrashedLoading(false);
     }
   }, []);
 
@@ -116,22 +137,24 @@ export function useBidangAdmin() {
     }
   };
 
+  /** Soft delete — bidang & kategori terkait pindah ke Sampah, bisa dipulihkan. */
   const deleteBidang = async (item: BidangItem): Promise<void> => {
     const confirmed = await showConfirmAlert({
-      title: 'Hapus Bidang Ini?',
-      text: `Apakah Anda yakin ingin menghapus bidang "${item.name}"? Kategori magang yang bernaung di bawah bidang ini mungkin perlu disesuaikan.`,
-      confirmButtonText: 'Ya, Hapus',
+      title: 'Pindahkan ke Sampah?',
+      text: `Bidang "${item.name}" beserta kategori di bawahnya akan dipindahkan ke Sampah, dan bisa dipulihkan kapan saja.`,
+      confirmButtonText: 'Ya, Pindahkan ke Sampah',
     });
     if (!confirmed) return;
 
     try {
       await apiRequest(`/bidangs/${item.id}`, { method: 'DELETE' });
       setBidangList((prev) => prev.filter((b) => b.id !== item.id));
-      showSuccessAlert('Bidang Dihapus', `Data bidang "${item.name}" telah dihapus dari sistem.`);
+      showSuccessAlert(
+        'Bidang Dipindahkan ke Sampah',
+        `Data bidang "${item.name}" beserta kategorinya telah diarsipkan. Buka tab Sampah untuk memulihkannya.`
+      );
     } catch (err) {
-      // Kalau bidang masih punya kategori terkait, backend mengembalikan 422
-      // dengan pesan yang sudah deskriptif -> langsung diteruskan ke user.
-      showToast('error', err instanceof ApiError ? err.message : 'Gagal menghapus bidang.');
+      showToast('error', err instanceof ApiError ? err.message : 'Gagal memindahkan bidang ke Sampah.');
     }
   };
 
@@ -151,6 +174,38 @@ export function useBidangAdmin() {
     }
   };
 
+  /** Pulihkan bidang dari Sampah — kategori terkait ikut pulih otomatis di backend. */
+  const restoreBidang = async (item: BidangItem): Promise<void> => {
+    try {
+      await apiRequest(`/bidangs/${item.id}/restore`, { method: 'PATCH' });
+      setTrashed((prev) => prev.filter((b) => b.id !== item.id));
+      await fetchBidangs(); // supaya bidang + kategori yang dipulihkan muncul lagi di list Aktif
+      showSuccessAlert('Bidang Dipulihkan', `Bidang "${item.name}" berhasil dipulihkan beserta kategorinya.`);
+    } catch (err) {
+      showToast('error', err instanceof ApiError ? err.message : 'Gagal memulihkan bidang.');
+    }
+  };
+
+  /** Hapus permanen dari Sampah — tidak bisa dibatalkan. */
+  const forceDeleteBidang = async (item: BidangItem): Promise<void> => {
+    const confirmed = await showConfirmAlert({
+      title: 'Hapus Permanen?',
+      text: `Tindakan ini tidak bisa dibatalkan. Bidang "${item.name}" akan dihapus permanen dari database.`,
+      confirmButtonText: 'Ya, Hapus Permanen',
+    });
+    if (!confirmed) return;
+
+    try {
+      await apiRequest(`/bidangs/${item.id}/force`, { method: 'DELETE' });
+      setTrashed((prev) => prev.filter((b) => b.id !== item.id));
+      showSuccessAlert('Bidang Dihapus Permanen', `Data bidang "${item.name}" telah dihapus permanen dari sistem.`);
+    } catch (err) {
+      // Ditolak backend (422) kalau masih ada kategori terkait — pesannya
+      // sudah deskriptif, cukup diteruskan.
+      showToast('error', err instanceof ApiError ? err.message : 'Gagal menghapus bidang secara permanen.');
+    }
+  };
+
   return {
     bidangList,
     loading,
@@ -160,5 +215,12 @@ export function useBidangAdmin() {
     updateBidang,
     deleteBidang,
     toggleStatus,
+
+    trashed,
+    trashedLoading,
+    trashedError,
+    fetchTrashed,
+    restoreBidang,
+    forceDeleteBidang,
   };
 }

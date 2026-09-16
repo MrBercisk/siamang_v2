@@ -38,7 +38,19 @@ Route::apiResource('lowongans', LowonganController::class)->only(['index', 'show
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::apiResource('bidangs', BidangController::class)->only(['store', 'update', 'destroy']);
+
+    // Soft delete (Sampah) untuk bidang — taruh sebelum/di luar apiResource
+    // supaya tidak bentrok dengan route {bidang} di atas.
+    Route::get('/bidangs-trashed', [BidangController::class, 'trashed']);
+    Route::patch('/bidangs/{id}/restore', [BidangController::class, 'restore']);
+    Route::delete('/bidangs/{id}/force', [BidangController::class, 'forceDelete']);
+
     Route::apiResource('kategoris', KategoriController::class)->only(['store', 'update', 'destroy']);
+
+    // Soft delete (Sampah) untuk kategori.
+    Route::get('/kategoris-trashed', [KategoriController::class, 'trashed']);
+    Route::patch('/kategoris/{id}/restore', [KategoriController::class, 'restore']);
+    Route::delete('/kategoris/{id}/force', [KategoriController::class, 'forceDelete']);
     Route::apiResource('periodes', PeriodeController::class)->only(['store', 'update', 'destroy']);
     Route::apiResource('lowongans', LowonganController::class)->only(['store', 'update', 'destroy']);
 

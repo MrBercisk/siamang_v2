@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
-import { PendaftarData } from './DetailDataModal';
+import { PendaftarData } from '../../types/pendaftar';
+import { resolveStorageUrl } from '../../lib/api';
+import { formatDate } from '../../utils/formatters';
 import {
   showSuccessAlert,
   showConfirmAlert,
   showDeleteConfirmAlert,
   showToast,
 } from '../../utils/swal';
+
+const DOCUMENT_LABELS: Record<string, string> = {
+  pas_foto: 'Pas Foto',
+  berkas_persyaratan: 'Berkas Persyaratan',
+  surat_permohonan: 'Surat Permohonan',
+  proposal: 'Proposal',
+  nda: 'Surat NDA',
+  cv_portofolio: 'CV & Portofolio',
+  transkrip_nilai: 'Transkrip Nilai',
+  video_perkenalan: 'Video Perkenalan',
+};
 
 interface DetailPendaftarViewProps {
   pendaftar: PendaftarData;
@@ -25,6 +38,14 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
   // Rejection Modal State
   const [showRejectModal, setShowRejectModal] = useState<boolean>(false);
   const [rejectReason, setRejectReason] = useState<string>('');
+
+  const documentsByType = new Map((pendaftar.documents ?? []).map((document) => [document.documentType, document]));
+  const openDocument = (documentType: string) => {
+    const document = documentsByType.get(documentType);
+    const fileUrl = resolveStorageUrl(document?.fileUrl);
+    if (fileUrl) window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    else showToast('info', 'Dokumen belum tersedia.');
+  };
 
   const handleTerima = async () => {
     const confirmed = await showConfirmAlert({
@@ -133,7 +154,7 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
           {/* PROFILE PHOTO */}
           <div className="text-center space-y-3">
             <img
-              src={pendaftar.fotoUrl}
+              src={pendaftar.fotoUrl || '/assets/default-avatar.png'}
               alt={pendaftar.nama}
               className="w-28 h-28 rounded-full object-cover border-4 border-[#E6F7F3] shadow-md mx-auto"
             />
@@ -145,8 +166,12 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
           {/* KEY VALUE DETAILS */}
           <div className="w-full space-y-4 text-xs">
             <div className="flex items-center justify-between">
+              <span className="text-slate-600 font-medium">Nomor Pendaftaran</span>
+              <span className="font-bold text-slate-900">{pendaftar.registrationNumber}</span>
+            </div>
+            <div className="flex items-center justify-between">
               <span className="text-slate-600 font-medium">Tanggal Pendaftaran</span>
-              <span className="font-bold text-slate-900">{pendaftar.tanggalDaftar}</span>
+              <span className="font-bold text-slate-900">{formatDate(pendaftar.tanggalDaftar)}</span>
             </div>
 
             <div className="flex items-center justify-between">
@@ -184,29 +209,21 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
 
           {/* OUTLINE ACTION BUTTONS */}
           <div className="w-full space-y-3 pt-1">
-            <button
-              type="button"
-              onClick={() => showToast('info', 'Membuka Berkas Pendaftaran...')}
-              className="w-full py-2.5 px-4 rounded-xl border border-[#1f877c] text-[#1f877c] font-bold text-xs hover:bg-[#E6F7F3] transition-all cursor-pointer text-center"
-            >
-              View Berkas Pendaftaran
-            </button>
-
-            <button
-              type="button"
-              onClick={() => showToast('info', 'Membuka Surat NDA...')}
-              className="w-full py-2.5 px-4 rounded-xl border border-[#1f877c] text-[#1f877c] font-bold text-xs hover:bg-[#E6F7F3] transition-all cursor-pointer text-center"
-            >
-              View Surat NDA
-            </button>
-
-            <button
-              type="button"
-              onClick={() => showToast('info', 'Membuka Surat Permohonan...')}
-              className="w-full py-2.5 px-4 rounded-xl border border-[#1f877c] text-[#1f877c] font-bold text-xs hover:bg-[#E6F7F3] transition-all cursor-pointer text-center"
-            >
-              View Surat Permohonan
-            </button>
+            {(pendaftar.documents ?? []).length === 0 ? (
+              <p className="text-xs text-slate-500 text-center">Belum ada dokumen.</p>
+            ) : (
+              (pendaftar.documents ?? []).map((document) => (
+                <button
+                  key={document.id}
+                  type="button"
+                  onClick={() => openDocument(document.documentType)}
+                  className="w-full py-2.5 px-4 rounded-xl border border-[#1f877c] text-[#1f877c] font-bold text-xs hover:bg-[#E6F7F3] transition-all cursor-pointer text-left flex items-center justify-between gap-3"
+                >
+                  <span>{DOCUMENT_LABELS[document.documentType] ?? document.documentType}</span>
+                  <span className="material-symbols-outlined text-base">open_in_new</span>
+                </button>
+              ))
+            )}
           </div>
 
         </div>
@@ -308,7 +325,7 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
                       <tr>
                         <td className="py-3.5 px-4 font-bold text-slate-400 text-center">2</td>
                         <td className="py-3.5 px-4 text-slate-600 font-medium">Program Studi / Jurusan</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">Teknologi Informasi / Sistem Informasi</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.jurusan || '-'}</td>
                       </tr>
                       <tr>
                         <td className="py-3.5 px-4 font-bold text-slate-400 text-center">3</td>
@@ -318,7 +335,7 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
                       <tr>
                         <td className="py-3.5 px-4 font-bold text-slate-400 text-center">4</td>
                         <td className="py-3.5 px-4 text-slate-600 font-medium">Semester Saat Ini</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">Semester 6</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.semester || '-'}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -335,18 +352,30 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
                       </tr>
                       <tr>
                         <td className="py-3.5 px-4 font-bold text-slate-400 text-center">2</td>
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">Keahlian Utama</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">Fullstack Web Developer & System Analyst</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">Judul Project</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.projectTitle || '-'}</td>
                       </tr>
                       <tr>
                         <td className="py-3.5 px-4 font-bold text-slate-400 text-center">3</td>
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">Tools yang Dikuasai</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">React, TypeScript, Tailwind CSS, Laravel, MySQL</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">Lowongan</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.lowongan || '-'}</td>
                       </tr>
                       <tr>
                         <td className="py-3.5 px-4 font-bold text-slate-400 text-center">4</td>
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">Rencana Rencana Periode Magang</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">01 Juni 2026 - 31 Agustus 2026 (3 Bulan)</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">Keahlian Utama</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.keahlian || '-'}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3.5 px-4 font-bold text-slate-400 text-center">5</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">Tools yang Dikuasai</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{pendaftar.tools || '-'}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3.5 px-4 font-bold text-slate-400 text-center">6</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">Periode Magang</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                          {pendaftar.tanggalMulai || '-'} - {pendaftar.tanggalSelesai || '-'}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -374,26 +403,18 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
                         </td>
                         <td className="py-3.5 px-4 text-slate-700 font-medium">{pendaftar.nim}</td>
                       </tr>
-                      <tr>
-                        <td className="py-3.5 px-4 font-bold text-slate-400 text-center">2</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">Ahmad Rizky Pratama</td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            Anggota 1
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700 font-medium">21/478913/SV/19232</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3.5 px-4 font-bold text-slate-400 text-center">3</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">Siti Nurhaliza</td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            Anggota 2
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700 font-medium">21/478914/SV/19233</td>
-                      </tr>
+                      {(pendaftar.teamMembers ?? []).map((member, index) => (
+                        <tr key={member.id}>
+                          <td className="py-3.5 px-4 font-bold text-slate-400 text-center">{index + 2}</td>
+                          <td className="py-3.5 px-4 font-bold text-slate-900">{member.fullName}</td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                              Anggota {index + 1}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-700 font-medium">{member.nim || '-'}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 )}
@@ -411,13 +432,15 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
             <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-md aspect-video">
               <video
                 controls
-                poster="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80"
+                poster={pendaftar.fotoUrl || undefined}
                 className="w-full h-full object-cover"
               >
-                <source
-                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-                  type="video/mp4"
-                />
+                {documentsByType.get('video_perkenalan')?.fileUrl && (
+                  <source
+                    src={resolveStorageUrl(documentsByType.get('video_perkenalan')?.fileUrl) ?? undefined}
+                    type="video/mp4"
+                  />
+                )}
                 Browser Anda tidak mendukung tag video.
               </video>
             </div>

@@ -1,4 +1,4 @@
-import { PendaftarData } from '../components/mentor/DetailDataModal';
+import { PendaftarData } from '../types/pendaftar';
 import { BimbinganData } from '../components/mentor/DetailBimbinganView';
 import { ChatMessage } from '../types/mentor';
 

@@ -1,5 +1,3 @@
-// Sesuai App\Models\Bidang: $fillable = ['name', 'status'], dan
-// App\Http\Controllers\Api\BidangController: Rule::in(['Aktif', 'Nonaktif']).
 export type BidangStatus = 'Aktif' | 'Nonaktif';
 
 export interface BidangItem {
@@ -8,6 +6,8 @@ export interface BidangItem {
   status: BidangStatus;
   /** Berasal dari `withCount('kategori')` di backend -> field `kategori_count`. */
   categoryCount: number;
+  /** Terisi kalau bidang sedang berada di sampah (soft-deleted). */
+  deletedAt?: string | null;
 }
 
 export interface BidangFormValues {

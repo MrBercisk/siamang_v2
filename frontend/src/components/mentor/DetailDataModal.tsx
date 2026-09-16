@@ -1,34 +1,11 @@
 import React from 'react';
+import { PendaftarData } from '../../types/pendaftar';
 import {
   showSuccessAlert,
   showConfirmAlert,
   showDeleteConfirmAlert,
   showToast,
 } from '../../utils/swal';
-
-export interface PendaftarData {
-  id: number;
-  fotoUrl: string;
-  nama: string;
-  email: string;
-  phone: string;
-  instansi: string;
-  nim: string;
-  kategori: string;
-  tanggalDaftar: string;
-  status: 'Diterima' | 'Ditolak' | 'Verifikasi';
-  tipeDaftar?: 'Kelompok' | 'Individu';
-  jurusan?: string;
-  semester?: string;
-  keahlian?: string;
-  alasanPenolakan?: string;
-  berkas: {
-    pasFoto: boolean;
-    suratPermohonan: boolean;
-    proposal: boolean;
-    nda: boolean;
-  };
-}
 
 interface DetailDataModalProps {
   pendaftar: PendaftarData | null;
