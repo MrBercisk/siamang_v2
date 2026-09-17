@@ -227,6 +227,46 @@ export function useAuth() {
       return false;
     }
   };
+  const forgotPassword = async (email: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await apiRequest<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        data: { email },
+      });
+      showToast('success', res.message || 'Instruksi reset password telah dikirim.');
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      const msg = err instanceof ApiError ? err.message : 'Gagal mengirim link reset password.';
+      showToast('error', msg);
+      return false;
+    }
+  };
+
+  const resetPassword = async (payload: {
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await apiRequest<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        data: payload,
+      });
+      showToast('success', res.message || 'Password berhasil direset.');
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      const msg = err instanceof ApiError ? err.message : 'Gagal mereset password. Link mungkin sudah kedaluwarsa.';
+      showToast('error', msg);
+      return false;
+    }
+  };
 
   return {
     user,
@@ -238,6 +278,8 @@ export function useAuth() {
     register,
     logout,
     changePassword,
+    forgotPassword,
+    resetPassword,
     refetchUser: fetchCurrentUser,
   };
 }

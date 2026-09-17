@@ -18,10 +18,34 @@ import { useAuth } from './hooks/useAuth';
 import { useInternshipData } from './hooks/useInternshipData';
 import { PageType } from './types/navigation';
 
+// App.tsx
+function getInitialPageFromUrl(): { page: PageType; resetToken: string; resetEmail: string } {
+  const params = new URLSearchParams(window.location.search);
+  const path = window.location.pathname;
+
+  if (path.includes('reset-password') && params.get('token')) {
+    const resetToken = params.get('token') || '';
+    const resetEmail = params.get('email') || '';
+
+    // Bersihkan token dari address bar setelah ditangkap, supaya tidak
+    // tersimpan di browser history / bisa ke-share tanpa sengaja.
+    window.history.replaceState({}, '', window.location.pathname);
+
+    return { page: 'reset-password', resetToken, resetEmail };
+  }
+
+  return { page: 'home', resetToken: '', resetEmail: '' };
+}
 export function App() {
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const initial = getInitialPageFromUrl();
+  const [currentPage, setCurrentPage] = useState<PageType>(initial.page);
+  const [resetToken] = useState(initial.resetToken);
+  const [resetEmail] = useState(initial.resetEmail);
   
-  const { user, isLoading: authLoading, error: authError, login, register, logout, changePassword } = useAuth();
+  const {
+    user, isLoading: authLoading, error: authError,
+    login, register, logout, changePassword, forgotPassword, resetPassword,
+  } = useAuth();
   const { categories, schedules, lowongans, requirements, applications, submitApplication } = useInternshipData(Boolean(user));
 
   useEffect(() => {
@@ -141,18 +165,23 @@ export function App() {
           />
         )}
 
-        {currentPage === 'forgot-password' && (
+         {currentPage === 'forgot-password' && (
           <ForgotPasswordPage
+            onForgotPassword={forgotPassword}
             onNavigateLogin={() => handleNavigate('login')}
             onNavigateHome={() => handleNavigate('home')}
-            onNavigateResetPassword={() => handleNavigate('reset-password')}
+            isLoading={authLoading}
           />
         )}
 
         {currentPage === 'reset-password' && (
           <ResetPasswordPage
+            token={resetToken}
+            email={resetEmail}
+            onResetPassword={resetPassword}
             onNavigateLogin={() => handleNavigate('login')}
             onNavigateHome={() => handleNavigate('home')}
+            isLoading={authLoading}
           />
         )}
         {currentPage === 'force-change-password' && (

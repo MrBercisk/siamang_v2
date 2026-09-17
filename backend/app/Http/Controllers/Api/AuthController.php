@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -94,6 +95,52 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password berhasil diperbarui.',
+        ]);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        // Selalu balas sukses meski email tidak terdaftar, supaya tidak
+        // membocorkan apakah suatu email terdaftar di sistem (enumeration).
+        if ($status === Password::RESET_LINK_SENT || $status === Password::INVALID_USER) {
+            return response()->json([
+                'message' => 'Jika email terdaftar, instruksi reset password telah dikirim.',
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Gagal mengirim link reset password. Coba lagi nanti.',
+        ], 422);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $status = Password::reset(
+            $validated,
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'must_change_password' => false,
+                ])->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['message' => 'Password berhasil direset. Silakan masuk kembali.']);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [__($status)],
         ]);
     }
 }

@@ -11,18 +11,17 @@ use App\Http\Controllers\Api\Admin\ApplicationAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-    // Publik
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-    // Butuh token Sanctum
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 });
-
 // Publik — tracking pendaftaran tanpa login (by registration_number + email)
 Route::get('/applications/track', [ApplicationController::class, 'track']);
 

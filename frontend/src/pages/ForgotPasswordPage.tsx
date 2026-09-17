@@ -2,29 +2,36 @@ import { useState, FormEvent } from 'react';
 import { JogjaEmblemLogo } from '../components/JogjaEmblemLogo';
 
 interface ForgotPasswordPageProps {
+  onForgotPassword: (email: string) => Promise<boolean>;
   onNavigateLogin: () => void;
   onNavigateHome: () => void;
-  onNavigateResetPassword?: () => void;
+  isLoading: boolean;
 }
 
 export function ForgotPasswordPage({
+  onForgotPassword,
   onNavigateLogin,
   onNavigateHome,
-  onNavigateResetPassword
+  isLoading,
 }: ForgotPasswordPageProps) {
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    const success = await onForgotPassword(email);
+    if (success) {
       setIsSubmitted(true);
-    }, 800);
+    }
+  };
+
+  const handleResend = async () => {
+    setIsResending(true);
+    await onForgotPassword(email);
+    setIsResending(false);
   };
 
   return (
@@ -67,7 +74,7 @@ export function ForgotPasswordPage({
             {/* Benefits List */}
             <div className="pt-2 space-y-3">
               <span className="text-xs font-semibold text-slate-500 block mb-2">Benefit:</span>
-              
+
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-xs font-bold text-emerald-600">
@@ -115,7 +122,7 @@ export function ForgotPasswordPage({
                       Cek Email Anda
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500 text-center leading-relaxed">
-                      Kami telah mengirim tautan reset password ke email Anda.
+                      Jika email terdaftar, kami telah mengirim tautan reset password.
                       {email && (
                         <span className="block font-semibold text-slate-700 mt-1">({email})</span>
                       )}
@@ -126,13 +133,7 @@ export function ForgotPasswordPage({
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (onNavigateResetPassword) {
-                          onNavigateResetPassword();
-                        } else {
-                          window.open('https://mail.google.com', '_blank');
-                        }
-                      }}
+                      onClick={() => window.open('https://mail.google.com', '_blank')}
                       className="w-full sm:flex-1 bg-[#1f877c] hover:bg-[#196e65] text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-sm cursor-pointer active:scale-98 text-xs sm:text-sm"
                     >
                       Buka Email
@@ -140,31 +141,13 @@ export function ForgotPasswordPage({
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsLoading(true);
-                        setTimeout(() => {
-                          setIsLoading(false);
-                          alert('Tautan reset password baru telah dikirim kembali ke email Anda.');
-                        }, 800);
-                      }}
-                      disabled={isLoading}
+                      onClick={handleResend}
+                      disabled={isResending || isLoading}
                       className="w-full sm:w-auto bg-white border border-[#1f877c] text-[#1f877c] hover:bg-emerald-50 font-bold py-3.5 px-6 rounded-xl transition-all cursor-pointer text-xs sm:text-sm disabled:opacity-50"
                     >
-                      {isLoading ? 'Mengirim...' : 'Kirim Ulang'}
+                      {isResending ? 'Mengirim...' : 'Kirim Ulang'}
                     </button>
                   </div>
-
-                  {onNavigateResetPassword && (
-                    <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={onNavigateResetPassword}
-                        className="text-[#1f877c] text-xs font-semibold hover:underline cursor-pointer"
-                      >
-                        (Simulasi) Buka link Reset Password dari email →
-                      </button>
-                    </div>
-                  )}
 
                   <div className="pt-2">
                     <button
