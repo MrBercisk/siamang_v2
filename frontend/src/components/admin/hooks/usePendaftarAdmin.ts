@@ -28,7 +28,7 @@ const STATUS_FROM_BACKEND: Record<string, PendaftarStatus> = {
 
 // harus persis sama nilai yang diterima oleh UpdateApplicationStatusRequest
 const STATUS_TO_BACKEND: Record<PendaftarStatus, string> = {
-  Verifikasi: 'pending',
+  Verifikasi: 'reviewing',
   Diterima: 'accepted',
   Ditolak: 'rejected',
 };
