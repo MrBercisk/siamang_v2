@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { usePendaftarAdmin } from './hooks/usePendaftarAdmin';
+import { AdminMentorOption } from '../../types/internship';
 import { PendaftarData } from '../../types/pendaftar';
 import { PendaftarStatsCards } from './pendaftar/PendaftarStatsCards';
 import { PendaftarTable } from './pendaftar/PendaftarTable';
 import { PendaftarRejectModal } from './pendaftar/PendaftarRejectModal';
 import { DetailPendaftarView } from '../mentor/DetailPendaftarView';
-import { showConfirmAlert } from '../../utils/swal';
+import { PilihMentorModal } from './pendaftar/PilihMentorModal';
 
 // Kategori magang yang bisa dipilih pendaftar. Pindahkan ke API/master data
 // (mis. dari endpoint /bidangs atau /kategoris) kalau daftar ini perlu dikelola dinamis.
@@ -18,7 +19,15 @@ const CATEGORY_OPTIONS = [
 ];
 
 export const PendaftarAdminView: React.FC = () => {
-  const { applicantList, loading, error, updateStatus, terimaApplicant, tolakApplicant } =
+  const {
+    applicantList,
+    loading,
+    error,
+    updateStatus,
+    terimaApplicant,
+    tolakApplicant,
+    fetchAvailableMentors,
+  } =
     usePendaftarAdmin();
 
   const [selectedApplicant, setSelectedApplicant] = useState<PendaftarData | null>(null);
@@ -28,6 +37,9 @@ export const PendaftarAdminView: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('Semua');
 
   const [rejectModalItem, setRejectModalItem] = useState<PendaftarData | null>(null);
+  const [mentorModalItem, setMentorModalItem] = useState<PendaftarData | null>(null);
+  const [availableMentors, setAvailableMentors] = useState<AdminMentorOption[]>([]);
+  const [loadingMentors, setLoadingMentors] = useState(false);
 
   const filteredApplicants = useMemo(
     () =>
@@ -62,15 +74,17 @@ export const PendaftarAdminView: React.FC = () => {
   };
 
   const handleTerimaClick = async (item: PendaftarData) => {
-    const confirmed = await showConfirmAlert({
-      title: 'Terima Pendaftaran?',
-      text: `Apakah Anda yakin ingin MENERIMA pendaftaran dari ${item.nama}?`,
-      confirmButtonText: 'Ya, Terima Pendaftar',
-      icon: 'question',
-    });
-    if (confirmed) {
-      await terimaApplicant(item);
-    }
+    setMentorModalItem(item);
+    setAvailableMentors([]);
+    setLoadingMentors(true);
+    const mentors = await fetchAvailableMentors(item.id);
+    setAvailableMentors(mentors ?? []);
+    setLoadingMentors(false);
+  };
+
+  const handleTerimaDenganMentor = async (mentorId: number): Promise<boolean> => {
+    if (!mentorModalItem) return false;
+    return terimaApplicant(mentorModalItem, mentorId);
   };
 
   const handleTolakClick = (item: PendaftarData) => {
@@ -89,6 +103,10 @@ export const PendaftarAdminView: React.FC = () => {
         pendaftar={selectedApplicant}
         onBack={() => setSelectedApplicant(null)}
         onUpdateStatus={handleUpdateStatusFromDetail}
+        onAccept={async (item) => {
+          await handleTerimaClick(item);
+          return true;
+        }}
       />
     );
   }
@@ -150,6 +168,17 @@ export const PendaftarAdminView: React.FC = () => {
         applicantName={rejectModalItem?.nama}
         onClose={() => setRejectModalItem(null)}
         onSubmit={handleTolakSubmit}
+      />
+
+      <PilihMentorModal
+        open={!!mentorModalItem}
+        applicantName={mentorModalItem?.nama}
+        bidang={mentorModalItem?.bidang}
+        kategori={mentorModalItem?.kategori}
+        mentors={availableMentors}
+        loading={loadingMentors}
+        onClose={() => setMentorModalItem(null)}
+        onSubmit={handleTerimaDenganMentor}
       />
 
     </div>

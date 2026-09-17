@@ -9,6 +9,7 @@ export interface User {
   role: 'applicant' | 'intern' | 'admin' | 'mentor' | 'alumni';
   avatar_url?: string;
   created_at?: string;
+  must_change_password?: boolean;
 }
 
 export interface AuthState {

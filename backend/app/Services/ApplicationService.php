@@ -476,13 +476,19 @@ class ApplicationService
     }
 
     /**
-     * Ambil daftar mentor yang tersedia untuk kategori dari application ini.
-     * Saat ini masih ambil semua user berrole mentor — ganti query ini kalau
-     * nanti pivot kategori_mentor sudah dibuat.
+     * Ambil daftar mentor yang tersedia untuk kategori dari application ini,
+     * lewat pivot kategori_mentor (Kategori::mentors() / User::kategoriDiampu()).
+     * Hanya mentor berstatus Aktif yang disarankan, supaya admin tidak
+     * menugaskan mentor yang sedang nonaktif.
      */
     public function getAvailableMentors(Application $application): Collection
     {
-        return User::where('role', 'mentor')->get(['id', 'name', 'email', 'avatar_url']);
+        $kategoriId = $application->kategori_id;
+
+        return User::mentors()
+            ->where('status', 'Aktif')
+            ->whereHas('kategoriDiampu', fn ($q) => $q->where('kategori.id', $kategoriId))
+            ->get(['id', 'name', 'email', 'avatar_url']);
     }
 
     /**

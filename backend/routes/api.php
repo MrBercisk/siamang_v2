@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\BidangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LowonganController;
+use App\Http\Controllers\Api\MentorController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,7 @@ Route::prefix('auth')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 });
 
@@ -53,6 +55,15 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::delete('/kategoris/{id}/force', [KategoriController::class, 'forceDelete']);
     Route::apiResource('periodes', PeriodeController::class)->only(['store', 'update', 'destroy']);
     Route::apiResource('lowongans', LowonganController::class)->only(['store', 'update', 'destroy']);
+
+    // Kelola mentor (User berrole 'mentor') + alokasi kategori via pivot kategori_mentor.
+    Route::prefix('mentors')->group(function () {
+        Route::get('/', [MentorController::class, 'index']);
+        Route::post('/', [MentorController::class, 'store']);
+        Route::get('/{mentor}', [MentorController::class, 'show']);
+        Route::put('/{mentor}', [MentorController::class, 'update']);
+        Route::delete('/{mentor}', [MentorController::class, 'destroy']);
+    });
 
     Route::prefix('admin')->group(function () {
         Route::get('/applications', [ApplicationAdminController::class, 'index']);

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BidangOption, EMPTY_KATEGORI_FORM, KategoriFormValues } from '../../../types/kategori';
 
 interface KategoriFormModalProps {
@@ -50,7 +51,7 @@ export const KategoriFormModal: React.FC<KategoriFormModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -143,6 +144,7 @@ export const KategoriFormModal: React.FC<KategoriFormModalProps> = ({
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

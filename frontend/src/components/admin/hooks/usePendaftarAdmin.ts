@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest, ApiError, resolveStorageUrl } from '../../../lib/api';
 import { showSuccessAlert, showToast } from '../../../utils/swal';
-import { AdminApplicationResponse, ApiCollection, ApiItem } from '../../../types/internship';
+import {
+  AdminApplicationResponse,
+  AdminMentorOption,
+  ApiCollection,
+  ApiItem,
+} from '../../../types/internship';
 import {
   PendaftarData,
   PendaftarStatus,
@@ -130,9 +135,26 @@ export function usePendaftarAdmin() {
     }
   }, []);
 
+  const fetchAvailableMentors = useCallback(async (id: number): Promise<AdminMentorOption[] | null> => {
+    try {
+      const res = await apiRequest<ApiCollection<AdminMentorOption>>(
+        `/admin/applications/${id}/available-mentors`
+      );
+      return res.data ?? [];
+    } catch (err) {
+      showToast('error', err instanceof ApiError ? err.message : 'Gagal memuat daftar mentor.');
+      return null;
+    }
+  }, []);
+
   /** Update status pendaftar secara langsung ke API, lalu sinkron ke state lokal. */
   const updateStatus = useCallback(
-    async (id: number, newStatus: PendaftarStatus, reason?: string): Promise<boolean> => {
+    async (
+      id: number,
+      newStatus: PendaftarStatus,
+      reason?: string,
+      mentorId?: number
+    ): Promise<boolean> => {
       try {
 
         const response = await apiRequest<ApiItem<AdminApplicationResponse>>(`/admin/applications/${id}/status`, {
@@ -140,6 +162,7 @@ export function usePendaftarAdmin() {
           data: {
             status: STATUS_TO_BACKEND[newStatus],
             admin_notes: newStatus === 'Ditolak' ? reason ?? null : null,
+            mentor_id: newStatus === 'Diterima' ? mentorId : undefined,
           },
         });
         const updated = mapPendaftar(response.data);
@@ -155,8 +178,8 @@ export function usePendaftarAdmin() {
 
   /** Quick action: terima pendaftar (dipanggil setelah konfirmasi di UI). */
   const terimaApplicant = useCallback(
-    async (item: PendaftarData): Promise<boolean> => {
-      const ok = await updateStatus(item.id, 'Diterima');
+    async (item: PendaftarData, mentorId: number): Promise<boolean> => {
+      const ok = await updateStatus(item.id, 'Diterima', undefined, mentorId);
       if (ok) {
         showSuccessAlert(
           'Pendaftaran Diterima!',
@@ -186,6 +209,7 @@ export function usePendaftarAdmin() {
     error,
     refetch: fetchApplicants,
     fetchApplicantById,
+    fetchAvailableMentors,
     updateStatus,
     terimaApplicant,
     tolakApplicant,

@@ -5,4 +5,7 @@ export type PageType =
   | 'login'
   | 'dashboard'
   | 'forgot-password'
-  | 'reset-password';
+  | 'reset-password'
+  | 'dashboard'
+  | 'force-change-password';
+  ;

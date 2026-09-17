@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BidangFormValues, BidangStatus, EMPTY_BIDANG_FORM } from '../../../types/bidang';
 
 interface BidangFormModalProps {
@@ -44,7 +45,7 @@ export const BidangFormModal: React.FC<BidangFormModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -118,6 +119,7 @@ export const BidangFormModal: React.FC<BidangFormModalProps> = ({
 
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

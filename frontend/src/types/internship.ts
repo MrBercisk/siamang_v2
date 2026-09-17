@@ -128,3 +128,10 @@ export interface AdminApplicationResponse {
   documents?: ApplicationDocument[];
   teamMembers?: ApplicationTeamMember[];
 }
+
+export interface AdminMentorOption {
+  id: number;
+  name: string;
+  email: string;
+  avatarUrl?: string | null;
+}

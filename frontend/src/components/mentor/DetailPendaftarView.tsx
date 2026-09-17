@@ -24,12 +24,14 @@ interface DetailPendaftarViewProps {
   pendaftar: PendaftarData;
   onBack: () => void;
   onUpdateStatus: (id: number, newStatus: 'Diterima' | 'Ditolak' | 'Verifikasi', reason?: string) => void;
+  onAccept?: (pendaftar: PendaftarData) => Promise<boolean>;
 }
 
 export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
   pendaftar,
   onBack,
   onUpdateStatus,
+  onAccept,
 }) => {
   const [activeTab, setActiveTab] = useState<
     'personal' | 'akademik' | 'project' | 'kelompok'
@@ -56,11 +58,15 @@ export const DetailPendaftarView: React.FC<DetailPendaftarViewProps> = ({
     });
 
     if (confirmed) {
-      onUpdateStatus(pendaftar.id, 'Diterima');
-      showSuccessAlert(
-        'Pendaftaran Diterima!',
-        `Status pendaftaran ${pendaftar.nama} berhasil diubah menjadi DITERIMA.`
-      );
+      if (onAccept) {
+        await onAccept(pendaftar);
+      } else {
+        onUpdateStatus(pendaftar.id, 'Diterima');
+        showSuccessAlert(
+          'Pendaftaran Diterima!',
+          `Status pendaftaran ${pendaftar.nama} berhasil diubah menjadi DITERIMA.`
+        );
+      }
     }
   };
 

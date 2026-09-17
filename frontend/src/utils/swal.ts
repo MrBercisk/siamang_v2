@@ -169,5 +169,39 @@ export const showToast = (icon: SweetAlertIcon, title: string) => {
     title,
   });
 };
+export const showTemporaryPasswordAlert = (mentorName: string, temporaryPassword: string) => {
+  return CustomSwal.fire({
+    icon: 'success',
+    title: 'Mentor Berhasil Ditambahkan!',
+    html: `
+      <p class="text-left">
+        <b>${mentorName}</b> telah terdaftar. Sampaikan password sementara berikut
+        ke mentor secara manual (WhatsApp/lisan). Mentor akan diminta mengganti
+        password saat login pertama.
+      </p>
+      <div id="temp-password-box" 
+           class="flex items-center justify-between gap-2 mt-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-mono font-bold text-slate-900 text-sm">
+        <span id="temp-password-value">${temporaryPassword}</span>
+        <button id="copy-temp-password" type="button"
+                class="text-[#1f877c] hover:underline text-xs font-bold shrink-0 cursor-pointer">
+          Salin
+        </button>
+      </div>
+    `,
+    confirmButtonText: 'Selesai',
+    iconColor: '#1f877c',
+    didOpen: () => {
+      const copyBtn = document.getElementById('copy-temp-password');
+      copyBtn?.addEventListener('click', () => {
+        navigator.clipboard.writeText(temporaryPassword).then(() => {
+          if (copyBtn) copyBtn.textContent = 'Tersalin!';
+          setTimeout(() => {
+            if (copyBtn) copyBtn.textContent = 'Salin';
+          }, 1500);
+        });
+      });
+    },
+  });
+};
 
 export default CustomSwal;
