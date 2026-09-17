@@ -29,6 +29,7 @@ class UserResource extends JsonResource
             'tools' => $this->tools,
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
+            'must_change_password' => $this->must_change_password,
             'current_application' => $this->whenLoaded('currentApplication', fn () => [
                 'id' => $this->currentApplication->id,
                 'status' => $this->currentApplication->status,

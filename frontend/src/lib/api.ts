@@ -1,10 +1,14 @@
 /**
  * API Client configured for Laravel REST API Integration (Sanctum / Passport)
- * Set VITE_API_BASE_URL in environment or defaults to http://localhost:8000/api
+ * Set VITE_API_BASE_URL and VITE_API_ORIGIN in environment for deployment.
  */
 
-const BASE_URL = (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL || '/api';
-const SERVER_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
+const ENV = (import.meta as unknown as {
+  env?: { VITE_API_BASE_URL?: string; VITE_API_ORIGIN?: string };
+}).env ?? {};
+const BASE_URL = ENV.VITE_API_BASE_URL || '/api';
+const SERVER_ORIGIN = ENV.VITE_API_ORIGIN
+  || (BASE_URL.startsWith('http') ? BASE_URL.replace(/\/api\/?$/, '') : 'http://localhost:8001');
 
 export function getStoredToken(): string | null {
   return localStorage.getItem('si_amang_token');

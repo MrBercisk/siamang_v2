@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User } from './types/auth';
 import { AnnouncementBar } from './components/AnnouncementBar';
 import { Navbar } from './components/Navbar';
@@ -12,18 +12,53 @@ import { LoginPage } from './pages/LoginPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ForcedPasswordChangePage } from './pages/ForcedPasswordChangePage';
 
 import { useAuth } from './hooks/useAuth';
 import { useInternshipData } from './hooks/useInternshipData';
 import { PageType } from './types/navigation';
 
+// App.tsx
+function getInitialPageFromUrl(): { page: PageType; resetToken: string; resetEmail: string } {
+  const params = new URLSearchParams(window.location.search);
+  const path = window.location.pathname;
+
+  if (path.includes('reset-password') && params.get('token')) {
+    const resetToken = params.get('token') || '';
+    const resetEmail = params.get('email') || '';
+
+    // Bersihkan token dari address bar setelah ditangkap, supaya tidak
+    // tersimpan di browser history / bisa ke-share tanpa sengaja.
+    window.history.replaceState({}, '', window.location.pathname);
+
+    return { page: 'reset-password', resetToken, resetEmail };
+  }
+
+  return { page: 'home', resetToken: '', resetEmail: '' };
+}
 export function App() {
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const initial = getInitialPageFromUrl();
+  const [currentPage, setCurrentPage] = useState<PageType>(initial.page);
+  const [resetToken] = useState(initial.resetToken);
+  const [resetEmail] = useState(initial.resetEmail);
   
-  const { user, isLoading: authLoading, error: authError, login, register, logout } = useAuth();
+  const {
+    user, isLoading: authLoading, error: authError,
+    login, register, logout, changePassword, forgotPassword, resetPassword,
+  } = useAuth();
   const { categories, schedules, lowongans, requirements, applications, submitApplication } = useInternshipData(Boolean(user));
 
+  useEffect(() => {
+    if (user?.must_change_password && currentPage !== 'force-change-password') {
+      setCurrentPage('force-change-password');
+    }
+  }, [user, currentPage]);
+
   const handleNavigate = (page: PageType) => {
+    // Blokir navigasi ke halaman lain selama password wajib diganti.
+    if (user?.must_change_password && page !== 'force-change-password') {
+      return;
+    }
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -44,7 +79,9 @@ export function App() {
     return success;
   };
 
+  const isForcedPasswordChange = currentPage === 'force-change-password';
   const isDashboard = currentPage === 'dashboard';
+  const isFullScreenPage = isDashboard || isForcedPasswordChange;
 
   // Default fallback user for applicant dashboard preview matching screenshot
   const currentUser: User = user || {
@@ -58,12 +95,12 @@ export function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f9fb] font-sans antialiased text-[#0F172A] selection:bg-[#005c55] selection:text-white">
       {/* Top Banner Announcement (Hidden in Dashboard) */}
-      {!isDashboard && (
+      {!isFullScreenPage  && (
         <AnnouncementBar message="Program magang periode kedua akan dibuka pada tanggal 5 Mei 2026" />
       )}
 
       {/* Main Header Nav (Hidden in Dashboard) */}
-      {!isDashboard && (
+      {!isFullScreenPage  && (
         <Navbar
           currentPage={currentPage}
           onNavigate={handleNavigate}
@@ -128,18 +165,30 @@ export function App() {
           />
         )}
 
-        {currentPage === 'forgot-password' && (
+         {currentPage === 'forgot-password' && (
           <ForgotPasswordPage
+            onForgotPassword={forgotPassword}
             onNavigateLogin={() => handleNavigate('login')}
             onNavigateHome={() => handleNavigate('home')}
-            onNavigateResetPassword={() => handleNavigate('reset-password')}
+            isLoading={authLoading}
           />
         )}
 
         {currentPage === 'reset-password' && (
           <ResetPasswordPage
+            token={resetToken}
+            email={resetEmail}
+            onResetPassword={resetPassword}
             onNavigateLogin={() => handleNavigate('login')}
             onNavigateHome={() => handleNavigate('home')}
+            isLoading={authLoading}
+          />
+        )}
+        {currentPage === 'force-change-password' && (
+          <ForcedPasswordChangePage
+            onChangePassword={changePassword}
+            onSuccess={() => setCurrentPage('dashboard')}
+            isLoading={authLoading}
           />
         )}
 
@@ -156,11 +205,8 @@ export function App() {
         )}
       </main>
 
-      {/* Footer (Hidden in Dashboard) */}
-      {!isDashboard && <Footer onNavigate={(page) => handleNavigate(page)} />}
-
-      {/* Floating Scroll To Top Button (Hidden in Dashboard) */}
-      {!isDashboard && <ScrollToTop />}
+      {!isFullScreenPage && <Footer onNavigate={(page) => handleNavigate(page)} />}
+      {!isFullScreenPage && <ScrollToTop />}
     </div>
   );
 }

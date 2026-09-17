@@ -10,14 +10,21 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 
 #[Fillable([
-    'name', 
-    'email', 
-    'password', 
-    'role', 
+    'name',
+    'email',
+    'password',
+    'role',
     'phone',
-    'avatar_url'
+    'avatar_url',
+
+    // mentor data
+    'nip',
+    'position',
+    'status',
+    'must_change_password'
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -30,6 +37,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -67,5 +75,30 @@ class User extends Authenticatable
     public function scopeAdmins($query)
     {
         return $query->where('role', 'admin');
+    }
+    public function sendPasswordResetNotification($token): void
+    {
+        $frontendUrl = rtrim(config('app.frontend_url'), '/');
+        $url = "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($this->email);
+
+        $this->notify(new class($url) extends ResetPasswordNotification {
+            protected string $url;
+
+            public function __construct(string $url)
+            {
+                parent::__construct('');
+                $this->url = $url;
+            }
+
+            public function toMail($notifiable)
+            {
+                return (new \Illuminate\Notifications\Messages\MailMessage)
+                    ->subject('Reset Password - SIAMANG')
+                    ->line('Anda menerima email ini karena ada permintaan reset password untuk akun Anda.')
+                    ->action('Reset Password', $this->url)
+                    ->line('Link ini akan kedaluwarsa dalam 60 menit.')
+                    ->line('Jika Anda tidak meminta reset password, abaikan email ini.');
+            }
+        });
     }
 }

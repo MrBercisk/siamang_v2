@@ -2,38 +2,63 @@ import { useState, FormEvent } from 'react';
 import { JogjaEmblemLogo } from '../components/JogjaEmblemLogo';
 
 interface ResetPasswordPageProps {
+  token: string;
+  email: string;
+  onResetPassword: (payload: {
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+  }) => Promise<boolean>;
   onNavigateLogin: () => void;
   onNavigateHome: () => void;
+  isLoading: boolean;
 }
 
-export function ResetPasswordPage({ onNavigateLogin, onNavigateHome }: ResetPasswordPageProps) {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+export function ResetPasswordPage({
+  token,
+  email,
+  onResetPassword,
+  onNavigateLogin,
+  onNavigateHome,
+  isLoading,
+}: ResetPasswordPageProps) {
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
+    if (!token || !email) {
+      setErrorMessage('Link reset password tidak valid. Silakan minta link baru.');
+      return;
+    }
     if (password !== confirmPassword) {
       setErrorMessage('Konfirmasi password tidak cocok.');
       return;
     }
-
     if (password.length < 8) {
       setErrorMessage('Password minimal 8 karakter.');
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    const success = await onResetPassword({
+      token,
+      email,
+      password,
+      password_confirmation: confirmPassword,
+    });
+
+    if (success) {
       setIsSuccess(true);
-    }, 800);
+    } else {
+      setErrorMessage('Link reset sudah kedaluwarsa atau tidak valid. Silakan minta link baru.');
+    }
   };
 
   return (

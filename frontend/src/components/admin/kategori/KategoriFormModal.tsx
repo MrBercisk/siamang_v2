@@ -1,37 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BidangFormValues, BidangStatus, EMPTY_BIDANG_FORM } from '../../../types/bidang';
+import { BidangOption, EMPTY_KATEGORI_FORM, KategoriFormValues } from '../../../types/kategori';
 
-interface BidangFormModalProps {
+interface KategoriFormModalProps {
   mode: 'add' | 'edit';
   open: boolean;
-  initialValues?: BidangFormValues;
+  initialValues?: KategoriFormValues;
+  bidangOptions: BidangOption[];
   onClose: () => void;
-  onSubmit: (values: BidangFormValues) => Promise<boolean> | boolean;
+  onSubmit: (values: KategoriFormValues) => Promise<boolean> | boolean;
 }
 
-export const BidangFormModal: React.FC<BidangFormModalProps> = ({
+export const KategoriFormModal: React.FC<KategoriFormModalProps> = ({
   mode,
   open,
   initialValues,
+  bidangOptions,
   onClose,
   onSubmit,
 }) => {
-  const [values, setValues] = useState<BidangFormValues>(initialValues || EMPTY_BIDANG_FORM);
+  const [values, setValues] = useState<KategoriFormValues>(initialValues || EMPTY_KATEGORI_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  // Sync form fields whenever the modal is (re)opened with new initial values
   useEffect(() => {
     if (open) {
-      setValues(initialValues || EMPTY_BIDANG_FORM);
+      setValues(
+        initialValues || {
+          ...EMPTY_KATEGORI_FORM,
+          bidangId: bidangOptions[0]?.id ?? '',
+        }
+      );
     }
-  }, [open, initialValues]);
+  }, [open, initialValues, bidangOptions]);
 
   if (!open) return null;
 
   const isEdit = mode === 'edit';
 
-  const handleChange = <K extends keyof BidangFormValues>(key: K, value: BidangFormValues[K]) => {
+  const handleChange = <K extends keyof KategoriFormValues>(key: K, value: KategoriFormValues[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -47,7 +53,7 @@ export const BidangFormModal: React.FC<BidangFormModalProps> = ({
 
   return createPortal(
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <div
@@ -56,11 +62,11 @@ export const BidangFormModal: React.FC<BidangFormModalProps> = ({
               }`}
             >
               <span className="material-symbols-outlined text-lg">
-                {isEdit ? 'edit_note' : 'add_box'}
+                {isEdit ? 'edit_note' : 'playlist_add'}
               </span>
             </div>
             <h3 className="text-base font-bold text-slate-900">
-              {isEdit ? 'Edit Data Bidang' : 'Tambah Bidang Baru'}
+              {isEdit ? 'Edit Kategori Magang' : 'Tambah Kategori Magang'}
             </h3>
           </div>
           <button
@@ -75,27 +81,46 @@ export const BidangFormModal: React.FC<BidangFormModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Nama Bidang *</label>
+            <label className="block font-bold text-slate-700 mb-1">Nama Kategori Magang *</label>
             <input
               type="text"
               required
               value={values.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Contoh: Layanan Statistik & Persandian"
+              placeholder="Contoh: Pengembangan Perangkat Lunak & UI/UX"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-medium focus:ring-2 focus:ring-[#1f877c]"
             />
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Status</label>
+            <label className="block font-bold text-slate-700 mb-1">Bidang Naungan *</label>
             <select
-              value={values.status}
-              onChange={(e) => handleChange('status', e.target.value as BidangStatus)}
+              required
+              value={values.bidangId}
+              onChange={(e) => handleChange('bidangId', Number(e.target.value))}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white font-medium"
             >
-              <option value="Aktif">Aktif</option>
-              <option value="Nonaktif">Nonaktif</option>
+              <option value="" disabled>
+                Pilih bidang...
+              </option>
+              {bidangOptions.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                  {b.status === 'Nonaktif' ? ' (Nonaktif)' : ''}
+                </option>
+              ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Deskripsi Ruang Lingkup Kategori</label>
+            <textarea
+              rows={3}
+              value={values.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="Penjelasan umum mengenai kategori ini..."
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-white font-medium resize-none"
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -113,7 +138,7 @@ export const BidangFormModal: React.FC<BidangFormModalProps> = ({
                 isEdit ? 'bg-blue-600 hover:bg-blue-700' : 'bg-[#1f877c] hover:bg-[#196e65]'
               }`}
             >
-              {submitting ? 'Menyimpan...' : isEdit ? 'Simpan Pembaruan' : 'Simpan Bidang Baru'}
+              {submitting ? 'Menyimpan...' : isEdit ? 'Simpan Pembaruan' : 'Simpan Kategori'}
             </button>
           </div>
 

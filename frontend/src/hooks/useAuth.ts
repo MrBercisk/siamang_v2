@@ -197,6 +197,76 @@ export function useAuth() {
       showToast('info', 'Anda telah keluar dari sistem.');
     }
   };
+  const changePassword = async (payload: {
+    current_password: string;
+    new_password: string;
+    new_password_confirmation: string;
+  }): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      await apiRequest('/auth/change-password', {
+        method: 'POST',
+        data: payload,
+      });
+
+      // Update flag lokal supaya guard/redirect tidak lagi memaksa
+      // ke halaman ganti password setelah ini.
+      if (user) {
+        const updatedUser: User = { ...user, must_change_password: false };
+        setUser(updatedUser);
+        localStorage.setItem('si_amang_user', JSON.stringify(updatedUser));
+      }
+
+      showToast('success', 'Password berhasil diperbarui.');
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      const msg = err instanceof ApiError ? err.message : 'Gagal memperbarui password.';
+      showToast('error', msg);
+      return false;
+    }
+  };
+  const forgotPassword = async (email: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await apiRequest<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        data: { email },
+      });
+      showToast('success', res.message || 'Instruksi reset password telah dikirim.');
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      const msg = err instanceof ApiError ? err.message : 'Gagal mengirim link reset password.';
+      showToast('error', msg);
+      return false;
+    }
+  };
+
+  const resetPassword = async (payload: {
+    token: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await apiRequest<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        data: payload,
+      });
+      showToast('success', res.message || 'Password berhasil direset.');
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      setIsLoading(false);
+      const msg = err instanceof ApiError ? err.message : 'Gagal mereset password. Link mungkin sudah kedaluwarsa.';
+      showToast('error', msg);
+      return false;
+    }
+  };
 
   return {
     user,
@@ -207,6 +277,9 @@ export function useAuth() {
     login,
     register,
     logout,
+    changePassword,
+    forgotPassword,
+    resetPassword,
     refetchUser: fetchCurrentUser,
   };
 }

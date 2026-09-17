@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logoPemkot from '../../../assets/logo-pemkot.webp';
 
 interface AdminHeaderProps {
   onNavigateHome: () => void;
@@ -13,11 +14,11 @@ export function AdminHeader({ onNavigateHome, onLogout }: AdminHeaderProps) {
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-1.5 shrink-0 shadow-2xs">
-         <img
-            src="https://upload.wikimedia.org/wikipedia/commons/d/d4/Logo_Kota_Yogyakarta.png"
-            alt="Logo Kota Yogyakarta"
-            className="w-full h-full object-contain"
-          />
+          <img
+              src={logoPemkot}
+              alt="Logo Kota Yogyakarta"
+              className="w-full h-full object-contain"
+            />
         </div>
         <div>
           <div className="flex items-center gap-2">

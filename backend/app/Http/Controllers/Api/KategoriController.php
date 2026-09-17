@@ -13,10 +13,13 @@ class KategoriController extends Controller
     /**
      * Publik — dipakai halaman pendaftaran untuk pilih kategori,
      * biasanya di-filter per bidang lewat ?bidang_id=.
+     *
+     * withCount('applications') ditambahkan supaya admin bisa menampilkan
+     * jumlah pendaftar per kategori tanpa query terpisah.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Kategori::query()->with('bidang');
+        $query = Kategori::query()->with('bidang')->withCount('applications');
 
         if ($request->filled('bidang_id')) {
             $query->where('bidang_id', $request->integer('bidang_id'));
@@ -34,7 +37,23 @@ class KategoriController extends Controller
     public function show(Kategori $kategori): JsonResponse
     {
         return response()->json([
-            'data' => $kategori->load('bidang'),
+            'data' => $kategori->load('bidang')->loadCount('applications'),
+        ]);
+    }
+
+    /**
+     * Admin — daftar kategori yang sudah di-soft-delete (Sampah).
+     */
+    public function trashed(Request $request): JsonResponse
+    {
+        $query = Kategori::onlyTrashed()->with('bidang')->withCount('applications');
+
+        if ($request->filled('bidang_id')) {
+            $query->where('bidang_id', $request->integer('bidang_id'));
+        }
+
+        return response()->json([
+            'data' => $query->orderByDesc('deleted_at')->get(),
         ]);
     }
 
@@ -74,11 +93,13 @@ class KategoriController extends Controller
         ]);
     }
 
+    /**
+     * Soft delete. Tetap ditolak (422) kalau masih dipakai lowongan atau
+     * sudah pernah dipilih di application, supaya riwayat pendaftaran lama
+     * tidak kehilangan referensi kategorinya.
+     */
     public function destroy(Kategori $kategori): JsonResponse
     {
-        // Cegah hapus kategori yang masih dipakai lowongan atau sudah
-        // pernah dipilih di application (biar riwayat pendaftaran lama
-        // tidak kehilangan referensi kategorinya).
         if ($kategori->lowongans()->exists() || $kategori->applications()->exists()) {
             return response()->json([
                 'message' => 'Kategori ini masih dipakai lowongan/pendaftaran, tidak bisa dihapus.',
@@ -88,7 +109,44 @@ class KategoriController extends Controller
         $kategori->delete();
 
         return response()->json([
-            'message' => 'Kategori berhasil dihapus.',
+            'message' => 'Kategori berhasil dipindahkan ke Sampah.',
+        ]);
+    }
+
+    /**
+     * Pulihkan kategori dari Sampah. Pakai int $id + onlyTrashed() karena
+     * route model binding implisit 404 untuk record yang sudah soft-deleted.
+     */
+    public function restore(int $id): JsonResponse
+    {
+        $kategori = Kategori::onlyTrashed()->findOrFail($id);
+        $kategori->restore();
+
+        return response()->json([
+            'message' => 'Kategori berhasil dipulihkan.',
+            'data' => $kategori->fresh()->load('bidang'),
+        ]);
+    }
+
+    /**
+     * Hapus permanen dari Sampah — tidak bisa dibatalkan. Tetap dicek ulang
+     * relasi lowongan/application untuk jaga-jaga (mis. dibuat lagi setelah
+     * kategori masuk Sampah).
+     */
+    public function forceDelete(int $id): JsonResponse
+    {
+        $kategori = Kategori::onlyTrashed()->findOrFail($id);
+
+        if ($kategori->lowongans()->exists() || $kategori->applications()->exists()) {
+            return response()->json([
+                'message' => 'Kategori ini masih terkait lowongan/pendaftaran, tidak bisa dihapus permanen.',
+            ], 422);
+        }
+
+        $kategori->forceDelete();
+
+        return response()->json([
+            'message' => 'Kategori berhasil dihapus permanen.',
         ]);
     }
 }

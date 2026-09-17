@@ -99,12 +99,12 @@ export const BidangTable: React.FC<BidangTableProps> = ({
                         <span className="material-symbols-outlined text-base">edit</span>
                       </button>
 
-                      {/* DELETE BUTTON */}
+                      {/* PINDAHKAN KE SAMPAH (SOFT DELETE) */}
                       <button
                         type="button"
                         onClick={() => onDelete(item)}
                         className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-rose-600 transition-colors cursor-pointer"
-                        title="Hapus Bidang"
+                        title="Pindahkan ke Sampah"
                       >
                         <span className="material-symbols-outlined text-base">delete</span>
                       </button>

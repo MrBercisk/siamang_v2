@@ -1,3 +1,11 @@
+export interface ApiCollection<T> {
+  data: T[];
+}
+
+export interface ApiItem<T> {
+  data: T;
+}
+
 export interface InternshipCategory {
   id: string;
   title: string;
@@ -45,19 +53,20 @@ export interface ApplicationRequirement {
 }
 
 export interface ApplicationDocument {
-  id: number;
+  id: string | number;
   documentType: string;
-  originalName: string;
-  filePath: string;
+  originalName?: string | null;
+  filePath?: string | null;
+  fileUrl?: string | null;
   status: string;
 }
 
 export interface ApplicationTeamMember {
   id: number;
   fullName: string;
-  email: string;
-  phone: string;
-  nim: string;
+  email?: string | null;
+  phone?: string | null;
+  nim?: string | null;
 }
 
 export interface ApplicationStatus {
@@ -91,4 +100,38 @@ export interface ApplicationStatus {
   periode?: string;
   periodeStart?: string;
   periodeEnd?: string;
+}
+
+export interface AdminApplicationResponse {
+  id: string | number;
+  registrationNumber: string;
+  applicantName: string;
+  avatarUrl?: string | null;
+  institution?: string | null;
+  major?: string | null;
+  nim?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  projectTitle?: string | null;
+  skills?: string | null;
+  tools?: string | null;
+  semester?: string | number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  fieldName?: string | null;
+  kategoriName?: string | null;
+  lowongan?: string | null;
+  registrationType?: 'Individu' | 'Kelompok' | null;
+  status: string;
+  submittedAt?: string | null;
+  notes?: string | null;
+  documents?: ApplicationDocument[];
+  teamMembers?: ApplicationTeamMember[];
+}
+
+export interface AdminMentorOption {
+  id: number;
+  name: string;
+  email: string;
+  avatarUrl?: string | null;
 }
