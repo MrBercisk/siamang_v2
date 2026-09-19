@@ -50,7 +50,7 @@ class LowonganController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'periode_id' => ['required', 'exists:periodes,id'],
+            'periode_id' => ['required', 'exists:periode,id'],
             'kategori_id' => ['required', 'exists:kategori,id'],
             'project' => ['nullable', 'string', 'max:255'],
             'definisi' => ['nullable', 'string'],

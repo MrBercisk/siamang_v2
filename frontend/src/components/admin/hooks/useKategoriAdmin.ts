@@ -20,6 +20,11 @@ import { BidangOption, KategoriFormValues, KategoriItem } from '../../../types/k
  *
  * Bidang options diambil dari /bidangs?all=1 (dipakai untuk dropdown form &
  * untuk menampilkan status bidang induk di tabel kategori).
+ *
+ * Catatan: view Periode Magang (PeriodeAdminView) memakai `kategoriList` dari
+ * hook ini juga sebagai sumber dropdown kategori pada form Lowongan — lihat
+ * `toKategoriOptions` di types/periode.ts — supaya tidak ada fetch/hook
+ * kedua untuk data yang sama.
  */
 
 interface ApiCollection<T> {
