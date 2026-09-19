@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePendaftarAdmin } from './hooks/usePendaftarAdmin';
 import { AdminMentorOption } from '../../types/internship';
 import { PendaftarData } from '../../types/pendaftar';
@@ -8,8 +8,6 @@ import { PendaftarRejectModal } from './pendaftar/PendaftarRejectModal';
 import { DetailPendaftarView } from '../mentor/DetailPendaftarView';
 import { PilihMentorModal } from './pendaftar/PilihMentorModal';
 
-// Kategori magang yang bisa dipilih pendaftar. Pindahkan ke API/master data
-// (mis. dari endpoint /bidangs atau /kategoris) kalau daftar ini perlu dikelola dinamis.
 const CATEGORY_OPTIONS = [
   'Perencanaan dan Implementasi Sistem Informasi',
   'Pengembangan Perangkat Lunak & UI/UX',
@@ -18,7 +16,17 @@ const CATEGORY_OPTIONS = [
   'Pengolahan Data Statistik Sektoral & Open Data',
 ];
 
-export const PendaftarAdminView: React.FC = () => {
+interface PendaftarAdminViewProps {
+  // Kalau di-set, otomatis buka detail pendaftar dengan id ini begitu data
+  // termuat — dipakai saat admin klik notifikasi pendaftar baru dari header.
+  focusApplicantId?: number | null;
+  onFocusApplicantHandled?: () => void;
+}
+
+export const PendaftarAdminView: React.FC<PendaftarAdminViewProps> = ({
+  focusApplicantId,
+  onFocusApplicantHandled,
+}) => {
   const {
     applicantList,
     loading,
@@ -27,8 +35,7 @@ export const PendaftarAdminView: React.FC = () => {
     terimaApplicant,
     tolakApplicant,
     fetchAvailableMentors,
-  } =
-    usePendaftarAdmin();
+  } = usePendaftarAdmin();
 
   const [selectedApplicant, setSelectedApplicant] = useState<PendaftarData | null>(null);
 
@@ -40,6 +47,20 @@ export const PendaftarAdminView: React.FC = () => {
   const [mentorModalItem, setMentorModalItem] = useState<PendaftarData | null>(null);
   const [availableMentors, setAvailableMentors] = useState<AdminMentorOption[]>([]);
   const [loadingMentors, setLoadingMentors] = useState(false);
+
+  // Begitu applicantList termuat dan ada focusApplicantId dari notifikasi,
+  // cari pendaftarnya dan langsung buka DetailPendaftarView.
+  useEffect(() => {
+    if (!focusApplicantId || loading || applicantList.length === 0) return;
+
+    const target = applicantList.find((a) => a.id === focusApplicantId);
+    if (target) {
+      setSelectedApplicant(target);
+    }
+    // Konsumsi sinyalnya sekali saja — supaya kalau admin kembali ke tabel
+    // lalu balik lagi ke tab ini, tidak auto-buka detail yang sama terus.
+    onFocusApplicantHandled?.();
+  }, [focusApplicantId, loading, applicantList, onFocusApplicantHandled]);
 
   const filteredApplicants = useMemo(
     () =>
@@ -59,7 +80,6 @@ export const PendaftarAdminView: React.FC = () => {
     [applicantList, searchTerm, statusFilter, categoryFilter]
   );
 
-  // Dipanggil dari DetailPendaftarView (mis. tombol terima/tolak/verifikasi di halaman detail).
   const handleUpdateStatusFromDetail = async (
     id: number,
     newStatus: 'Diterima' | 'Ditolak' | 'Verifikasi',
@@ -96,7 +116,6 @@ export const PendaftarAdminView: React.FC = () => {
     return tolakApplicant(rejectModalItem, reason);
   };
 
-  // TAMPILAN DETAIL PENDAFTAR
   if (selectedApplicant) {
     return (
       <DetailPendaftarView
@@ -113,8 +132,6 @@ export const PendaftarAdminView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in font-sans text-slate-800">
-
-      {/* PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -162,7 +179,6 @@ export const PendaftarAdminView: React.FC = () => {
         </>
       )}
 
-      {/* MODAL ALASAN PENOLAKAN (QUICK ACTION DARI TABEL) */}
       <PendaftarRejectModal
         open={!!rejectModalItem}
         applicantName={rejectModalItem?.nama}
@@ -180,7 +196,6 @@ export const PendaftarAdminView: React.FC = () => {
         onClose={() => setMentorModalItem(null)}
         onSubmit={handleTerimaDenganMentor}
       />
-
     </div>
   );
 };

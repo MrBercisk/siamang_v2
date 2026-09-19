@@ -10,6 +10,7 @@ import { AdminHeader } from '../../components/admin/layout/AdminHeader';
 import { AdminSidebar, AdminTab } from '../../components/admin/layout/AdminSidebar';
 import { AdminDashboardTab } from '../../components/admin/tabs/AdminDashboardTab';
 import { BimbinganSettingsTab } from '../../components/admin/tabs/BimbinganSettingsTab';
+import { useAdminNotifications } from '../../components/admin/hooks/useAdminNotifications';
 
 interface AdminDashboardPageProps {
   user: User;
@@ -25,6 +26,8 @@ export function AdminDashboardPage({
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const { pendingApplications, totalPending } = useAdminNotifications();
+
   const handleLogout = () => {
     if (onLogout) onLogout();
     else onNavigate('home');
@@ -32,7 +35,14 @@ export function AdminDashboardPage({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-800">
-      <AdminHeader onNavigateHome={() => onNavigate('home')} onLogout={handleLogout} />
+      <AdminHeader
+        onNavigateHome={() => onNavigate('home')}
+        onLogout={handleLogout}
+        totalPending={totalPending}
+        pendingApplications={pendingApplications}
+        onViewApplication={() => setActiveTab('pendaftar')}
+        onViewAllApplications={() => setActiveTab('pendaftar')}
+      />
 
       <div className="flex-1 flex relative">
         <AdminSidebar

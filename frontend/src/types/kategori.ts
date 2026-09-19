@@ -1,8 +1,9 @@
+export type BidangStatus = 'Aktif' | 'Nonaktif';
 
 export interface BidangOption {
   id: number;
   name: string;
-  status: 'Aktif' | 'Nonaktif';
+  status: BidangStatus;
 }
 
 export interface KategoriItem {
@@ -10,23 +11,29 @@ export interface KategoriItem {
   name: string;
   bidangId: number;
   bidangName: string;
-  bidangStatus: 'Aktif' | 'Nonaktif';
+  bidangStatus: BidangStatus;
   quota: number | null;
   description?: string;
-  /** Berasal dari `withCount('applications')` di backend. */
   totalApplied: number;
-  /** Hanya terisi untuk item di Sampah (soft-deleted). */
-  deletedAt?: string | null;
+  deletedAt: string | null;
 }
 
 export interface KategoriFormValues {
-  name: string;
   bidangId: number | '';
+  name: string;
   description: string;
 }
 
 export const EMPTY_KATEGORI_FORM: KategoriFormValues = {
-  name: '',
   bidangId: '',
+  name: '',
   description: '',
 };
+
+export function kategoriToFormValues(item: KategoriItem): KategoriFormValues {
+  return {
+    bidangId: item.bidangId,
+    name: item.name,
+    description: item.description ?? '',
+  };
+}

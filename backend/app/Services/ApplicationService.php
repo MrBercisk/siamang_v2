@@ -9,6 +9,7 @@ use App\Models\Kategori;
 use App\Models\Lowongan;
 use App\Models\Periode;
 use App\Models\User;
+use App\Notifications\ApplicationStatusUpdated;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -502,6 +503,7 @@ class ApplicationService
             $application->mentor_id = $validated['mentor_id'];
         }
 
+        $statusChanged = $application->status !== $validated['status'];
         $application->status = $validated['status'];
 
         if (! empty($validated['admin_notes'])) {
@@ -513,6 +515,13 @@ class ApplicationService
         }
 
         $application->save();
+
+        // Kirim email hanya saat status benar-benar berubah jadi 'accepted'
+        // atau 'rejected' — supaya tidak spam email tiap kali admin update
+        // field lain (misal ganti mentor) tanpa mengubah status.
+        if ($statusChanged && in_array($application->status, ['accepted', 'rejected'], true)) {
+            $application->user->notify(new ApplicationStatusUpdated($application));
+        }
 
         return $application->fresh(['bimbingan.mentor', 'user']);
     }

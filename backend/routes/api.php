@@ -6,8 +6,11 @@ use App\Http\Controllers\Api\BidangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LowonganController;
 use App\Http\Controllers\Api\MentorController;
+use App\Http\Controllers\Api\Mentor\MentorDashboardController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
+use App\Http\Controllers\Api\Admin\BimbinganAdminController;
+use App\Http\Controllers\Api\Admin\JadwalBimbinganAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -70,5 +73,21 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::get('/applications/{id}/available-mentors', [ApplicationAdminController::class, 'availableMentors']);
         Route::patch('/applications/{id}/mentor', [ApplicationAdminController::class, 'assignMentor']);
         Route::patch('/applications/{id}/status', [ApplicationAdminController::class, 'updateStatus']);
+
+        // Monitoring bimbingan per peserta (model Bimbingan: mentor, status, progress).
+        Route::get('/bimbingans', [BimbinganAdminController::class, 'index']);
+
+        // Jadwal bimbingan (kalender admin + sinkronisasi Google Calendar nanti).
+        // /options ditaruh sebelum route ber-{id} supaya tidak tertangkap sebagai id.
+        Route::get('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'index']);
+        Route::get('/jadwal-bimbingans/options', [JadwalBimbinganAdminController::class, 'options']);
+        Route::post('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'store']);
+        Route::put('/jadwal-bimbingans/{id}', [JadwalBimbinganAdminController::class, 'update']);
+        Route::delete('/jadwal-bimbingans/{id}', [JadwalBimbinganAdminController::class, 'destroy']);
     });
+});
+
+// Dashboard mentor — data dibatasi ke mentor yang login (lihat MentorDashboardService).
+Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(function () {
+    Route::get('/dashboard', [MentorDashboardController::class, 'index']);
 });
