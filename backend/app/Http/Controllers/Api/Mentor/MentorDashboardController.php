@@ -21,7 +21,6 @@ class MentorDashboardController extends Controller
 
         return ApiResponse::data([
             'stats' => $dashboard['stats'],
-            // Resource yang sama dengan admin, supaya bentuk jadwal konsisten.
             'schedules' => JadwalBimbinganResource::collection($dashboard['schedules'])->resolve($request),
             'students' => $dashboard['students']->values(),
         ]);

@@ -34,5 +34,13 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'google_calendar' => [
+        'credentials'      => env('GOOGLE_CALENDAR_CREDENTIALS', storage_path('app/google/credentials.json')),
+        'calendar_id'      => env('GOOGLE_CALENDAR_ID'),
+        'timezone'         => env('GOOGLE_CALENDAR_TIMEZONE', 'Asia/Jakarta'),
+        'impersonate'      => env('GOOGLE_CALENDAR_IMPERSONATE'),
+        'sync_past_days'   => 30,   // rentang tarik: 30 hari ke belakang
+        'sync_future_days' => 180,  // ... sampai 180 hari ke depan
+    ],
 
 ];

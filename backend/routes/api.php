@@ -81,6 +81,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         // /options ditaruh sebelum route ber-{id} supaya tidak tertangkap sebagai id.
         Route::get('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'index']);
         Route::get('/jadwal-bimbingans/options', [JadwalBimbinganAdminController::class, 'options']);
+        Route::post('/jadwal-bimbingans/sync', [JadwalBimbinganAdminController::class, 'sync'])
+            ->middleware('throttle:6,1');
         Route::post('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'store']);
         Route::put('/jadwal-bimbingans/{id}', [JadwalBimbinganAdminController::class, 'update']);
         Route::delete('/jadwal-bimbingans/{id}', [JadwalBimbinganAdminController::class, 'destroy']);

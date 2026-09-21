@@ -23,7 +23,6 @@ class Nilai extends Model
         'surat_keterangan_name',
     ];
 
-    // rata_rata adalah generated column (dihitung DB), jangan diisi manual.
     protected $guarded_extra = ['rata_rata'];
 
     protected function casts(): array
