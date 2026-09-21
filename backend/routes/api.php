@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BidangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LowonganController;
 use App\Http\Controllers\Api\MentorController;
+use App\Http\Controllers\Api\Mentor\MentorBimbinganController;
 use App\Http\Controllers\Api\Mentor\MentorDashboardController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
@@ -77,8 +78,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         // Monitoring bimbingan per peserta (model Bimbingan: mentor, status, progress).
         Route::get('/bimbingans', [BimbinganAdminController::class, 'index']);
 
-        // Jadwal bimbingan (kalender admin + sinkronisasi Google Calendar nanti).
-        // /options ditaruh sebelum route ber-{id} supaya tidak tertangkap sebagai id.
+        // Jadwal bimbingan (kalender admin + sinkronisasi Google Calendar).
+        // /options dan /sync ditaruh sebelum route ber-{id} supaya tidak tertangkap sebagai id.
         Route::get('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'index']);
         Route::get('/jadwal-bimbingans/options', [JadwalBimbinganAdminController::class, 'options']);
         Route::post('/jadwal-bimbingans/sync', [JadwalBimbinganAdminController::class, 'sync'])
@@ -89,7 +90,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     });
 });
 
-// Dashboard mentor — data dibatasi ke mentor yang login (lihat MentorDashboardService).
+// Dashboard & bimbingan mentor — data dibatasi ke mentor yang login
+// (lihat MentorDashboardService dan MentorBimbinganService).
 Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(function () {
     Route::get('/dashboard', [MentorDashboardController::class, 'index']);
+
+    // Halaman Bimbingan Mahasiswa: daftar, detail, dan setujui/tolak laporan.
+    // POST /bimbingans/{id}/nilai menyusul (menunggu kolom model Nilai).
+    Route::get('/bimbingans', [MentorBimbinganController::class, 'index']);
+    Route::get('/bimbingans/{id}', [MentorBimbinganController::class, 'show']);
+    Route::patch('/bimbingans/{id}/laporan/{laporanId}', [MentorBimbinganController::class, 'updateLaporan']);
 });

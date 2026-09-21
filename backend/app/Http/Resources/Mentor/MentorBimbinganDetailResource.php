@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Http\Resources\Mentor;
+
+use App\Support\LaporanStatus;
+use Illuminate\Http\Request;
+
+/**
+ * @mixin \App\Models\Bimbingan
+ */
+class MentorBimbinganDetailResource extends MentorBimbinganListResource
+{
+    public function toArray(Request $request): array
+    {
+        return array_merge(parent::toArray($request), [
+            // TODO: isi dari application->teamMembers bila kolom TeamMember sudah diketahui.
+            // Format: [['nama' => '...', 'isKetua' => true], ...]. Kosong = blok anggota disembunyikan.
+            'anggota' => [],
+
+            'progressList' => $this->progressItems->map(fn ($item) => [
+                'id' => $item->id,
+                'tanggal' => $item->tanggal_bimbingan?->format('Y-m-d'),
+                'pencapaian' => $item->pencapaian,
+                'catatan' => $item->catatan,
+                'filePresentasiUrl' => $item->file_presentasi,
+            ])->values(),
+
+            // Relasi laporan() adalah hasOne: satu laporan per bimbingan.
+            'laporanList' => $this->laporan ? [[
+                'id' => $this->laporan->id,
+                'judulLaporan' => $this->laporan->judul_laporan,
+                'fileLaporanUrl' => $this->laporan->file_laporan,
+                'linkProject' => $this->laporan->link_google_drive,
+                'formNilaiUrl' => $this->laporan->form_nilai,
+                'status' => LaporanStatus::toApi($this->laporan->status),
+            ]] : [],
+
+            // TODO: isi dari relasi nilai() bila kolom model Nilai sudah diketahui.
+            'nilai' => null,
+        ]);
+    }
+}
