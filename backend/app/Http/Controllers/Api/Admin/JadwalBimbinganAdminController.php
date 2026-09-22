@@ -8,8 +8,10 @@ use App\Http\Resources\Admin\JadwalBimbinganResource;
 use App\Models\JadwalBimbingan;
 use App\Services\JadwalBimbinganService;
 use App\Support\ApiResponse;
+use Google\Service\Exception as GoogleServiceException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class JadwalBimbinganAdminController extends Controller
 {
@@ -36,6 +38,25 @@ class JadwalBimbinganAdminController extends Controller
     public function options(): JsonResponse
     {
         return ApiResponse::data($this->jadwalService->options());
+    }
+
+    /**
+     * Tarik agenda dari Google Calendar lalu masukkan ke database.
+     * Respons: { data: { created, updated, deleted, skipped: [{ title, reason }] } }
+     */
+    public function sync(): JsonResponse
+    {
+        try {
+            $result = $this->jadwalService->syncFromGoogle();
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 503);
+        } catch (GoogleServiceException $e) {
+            report($e);
+
+            return response()->json(['message' => $this->googleErrorMessage($e)], 502);
+        }
+
+        return ApiResponse::data($result);
     }
 
     public function store(JadwalBimbinganRequest $request): JsonResponse
@@ -70,5 +91,14 @@ class JadwalBimbinganAdminController extends Controller
         return response()->json([
             'message' => 'Jadwal bimbingan berhasil dihapus.',
         ]);
+    }
+
+    private function googleErrorMessage(GoogleServiceException $e): string
+    {
+        return match ($e->getCode()) {
+            401, 403 => 'Google menolak akses. Pastikan kalender dibagikan ke service account dengan izin yang cukup.',
+            404 => 'Kalender Google tidak ditemukan. Periksa GOOGLE_CALENDAR_ID.',
+            default => 'Gagal terhubung ke Google Calendar. Coba lagi beberapa saat.',
+        };
     }
 }

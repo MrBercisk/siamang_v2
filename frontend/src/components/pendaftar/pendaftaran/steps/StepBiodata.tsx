@@ -197,18 +197,28 @@ export function StepBiodata({
             <input
               type="text"
               value={biodata.fullName}
-              onChange={(e) => setBiodata({ ...biodata, fullName: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none"
+              readOnly
+              disabled
+              title="Nama Lengkap mengikuti data akun Anda dan tidak dapat diubah di sini"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed outline-none"
             />
+            <p className="mt-1 text-[10px] text-slate-400">
+              Nama Lengkap mengikuti akun Anda. Untuk mengubahnya, silakan perbarui di halaman Profile Saya.
+            </p>
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">Email</label>
             <input
               type="email"
               value={biodata.email}
-              onChange={(e) => setBiodata({ ...biodata, email: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1f877c] outline-none"
+              readOnly
+              disabled
+              title="Email mengikuti data akun Anda dan tidak dapat diubah di sini"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed outline-none"
             />
+            <p className="mt-1 text-[10px] text-slate-400">
+              Email mengikuti akun Anda. Untuk mengubahnya, silakan perbarui di halaman Profile Saya.
+            </p>
           </div>
           <div>
             <label className="block font-bold text-slate-700 mb-1">No. Handphone</label>

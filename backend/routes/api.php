@@ -6,11 +6,15 @@ use App\Http\Controllers\Api\BidangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LowonganController;
 use App\Http\Controllers\Api\MentorController;
+use App\Http\Controllers\Api\Mentor\MentorBimbinganController;
 use App\Http\Controllers\Api\Mentor\MentorDashboardController;
+use App\Http\Controllers\Api\Mentor\MentorForumController;
+use App\Http\Controllers\Api\Mentor\MentorPendaftarController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
 use App\Http\Controllers\Api\Admin\BimbinganAdminController;
 use App\Http\Controllers\Api\Admin\JadwalBimbinganAdminController;
+use App\Http\Controllers\Api\Pendaftar\PendaftarForumController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -77,17 +81,39 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         // Monitoring bimbingan per peserta (model Bimbingan: mentor, status, progress).
         Route::get('/bimbingans', [BimbinganAdminController::class, 'index']);
 
-        // Jadwal bimbingan (kalender admin + sinkronisasi Google Calendar nanti).
-        // /options ditaruh sebelum route ber-{id} supaya tidak tertangkap sebagai id.
+        // Jadwal bimbingan (kalender admin + sinkronisasi Google Calendar).
+        // /options dan /sync ditaruh sebelum route ber-{id} supaya tidak tertangkap sebagai id.
         Route::get('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'index']);
         Route::get('/jadwal-bimbingans/options', [JadwalBimbinganAdminController::class, 'options']);
+        Route::post('/jadwal-bimbingans/sync', [JadwalBimbinganAdminController::class, 'sync'])
+            ->middleware('throttle:6,1');
         Route::post('/jadwal-bimbingans', [JadwalBimbinganAdminController::class, 'store']);
         Route::put('/jadwal-bimbingans/{id}', [JadwalBimbinganAdminController::class, 'update']);
         Route::delete('/jadwal-bimbingans/{id}', [JadwalBimbinganAdminController::class, 'destroy']);
     });
 });
 
-// Dashboard mentor — data dibatasi ke mentor yang login (lihat MentorDashboardService).
+// Dashboard, bimbingan, & pendaftar mentor — data dibatasi ke mentor yang login
+// (lihat MentorDashboardService, MentorBimbinganService, MentorPendaftarService).
 Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(function () {
     Route::get('/dashboard', [MentorDashboardController::class, 'index']);
+
+    // Halaman Bimbingan Mahasiswa: daftar, detail, dan setujui/tolak laporan.
+    // POST /bimbingans/{id}/nilai menyusul (menunggu kolom model Nilai).
+    Route::get('/bimbingans', [MentorBimbinganController::class, 'index']);
+    Route::get('/bimbingans/{id}', [MentorBimbinganController::class, 'show']);
+    Route::patch('/bimbingans/{id}/laporan/{laporanId}', [MentorBimbinganController::class, 'updateLaporan']);
+
+    // Forum per bimbingan, dibatasi ke mahasiswa yang dibimbing mentor login.
+    Route::get('/forum', [MentorForumController::class, 'index']);
+    Route::post('/forum', [MentorForumController::class, 'store']);
+
+    // Halaman Pendaftar Magang: baca saja — mentor tidak menerima/menolak,
+    // itu wewenang admin (lihat ApplicationAdminController::updateStatus).
+    Route::get('/pendaftars', [MentorPendaftarController::class, 'index']);
+});
+
+Route::middleware(['auth:sanctum', 'role:intern'])->prefix('intern')->group(function () {
+    Route::get('/forum', [PendaftarForumController::class, 'index']);
+    Route::post('/forum', [PendaftarForumController::class, 'store']);
 });

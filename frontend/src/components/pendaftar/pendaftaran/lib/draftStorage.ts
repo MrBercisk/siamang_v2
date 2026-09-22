@@ -4,6 +4,7 @@ import { BiodataState, RegistrationType, TeamMember } from '../../types';
 export const DRAFT_KEY = 'si_amang_pendaftaran_draft';
 
 export interface DraftState {
+  userId: string | number;
   currentStep: number;
   biodata: BiodataState;
   registrationType: RegistrationType;
@@ -15,11 +16,17 @@ export interface DraftState {
   savedAt: string;
 }
 
-export function loadDraft(): DraftState | null {
+
+export function loadDraft(userId: string | number): DraftState | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as DraftState;
+
+    if (parsed.userId === undefined || String(parsed.userId) !== String(userId)) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
 
     if (parsed.biodata && !parsed.biodata.semester) {
       parsed.biodata.semester = '5';
@@ -30,6 +37,7 @@ export function loadDraft(): DraftState | null {
     return null;
   }
 }
+
 export function getDefaultBiodata(user: User): BiodataState {
   return {
     photoUrl: '',

@@ -20,6 +20,8 @@ import {
  * - GET    /admin/jadwal-bimbingans/options  -> options(), { students, mentors } untuk
  *                                               dropdown form. students = user dengan
  *                                               application 'accepted'; mentors = mentor Aktif.
+ * - POST   /admin/jadwal-bimbingans/sync     -> sync(), tarik agenda dari Google Calendar lalu
+ *                                               upsert ke DB. { created, updated, deleted, skipped[] }.
  * - POST   /admin/jadwal-bimbingans          -> store(), 422 bila validasi gagal.
  * - PUT    /admin/jadwal-bimbingans/{id}     -> update(), field sama dengan store().
  * - DELETE /admin/jadwal-bimbingans/{id}     -> destroy(), HAPUS PERMANEN (model
@@ -28,9 +30,8 @@ import {
  * Status jadwal (Dijadwalkan/Berlangsung/Selesai) dihitung di sini lewat
  * `getScheduleStatus`, bukan dari backend.
  *
- * Google Calendar: `googleCalendarSynced` baru bernilai true setelah integrasi
- * di JadwalBimbinganService aktif. Sampai saat itu, jadwal hanya tersimpan
- * di database SIAMANG.
+ * Google Calendar: `googleCalendarSynced` bernilai true bila jadwal sudah terhubung ke
+ * event Google (dikirim dari SIAMANG atau ditarik lewat `syncFromGoogle`).
  *
  * Hook ini dipakai oleh JadwalBimbinganAdminView (withOptions: true, untuk form)
  * dan BimbinganSettingsTab (read-only, tanpa options).
@@ -71,6 +72,13 @@ interface BackendOptions {
     mentorId?: number | string | null;
   }[];
   mentors: { id: number | string; name: string }[];
+}
+
+interface BackendSyncResult {
+  created: number;
+  updated: number;
+  deleted: number;
+  skipped: { title: string; reason: string }[];
 }
 
 function mapJadwal(item: BackendJadwal): ScheduleEvent {
@@ -123,6 +131,28 @@ function validateForm(values: JadwalFormValues): string | null {
   return null;
 }
 
+/** Ringkasan hasil tarik dari Google Calendar untuk ditampilkan ke admin. */
+function buildSyncMessage({ created, updated, deleted, skipped }: BackendSyncResult): string {
+  const parts: string[] = [];
+  if (created) parts.push(`${created} jadwal baru`);
+  if (updated) parts.push(`${updated} diperbarui`);
+  if (deleted) parts.push(`${deleted} dihapus`);
+
+  let message =
+    parts.length > 0 ? `${parts.join(', ')}.` : 'Tidak ada perubahan dari Google Calendar.';
+
+  if (skipped.length > 0) {
+    const titles = skipped
+      .slice(0, 3)
+      .map((item) => `"${item.title}"`)
+      .join(', ');
+    const more = skipped.length > 3 ? `, dan ${skipped.length - 3} lainnya` : '';
+    message += ` ${skipped.length} event dilewati karena mahasiswa/mentor tidak dikenali (${titles}${more}). Pastikan email mereka ditambahkan sebagai tamu event.`;
+  }
+
+  return message;
+}
+
 /** Status dihitung dari tanggal & jam karena tabel jadwal_bimbingans tidak punya kolom status. */
 export function getScheduleStatus(event: ScheduleEvent, now = new Date()): ScheduleStatus {
   if (!event.date) return 'dijadwalkan';
@@ -152,6 +182,7 @@ export function useJadwalBimbinganAdmin({
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [mentors, setMentors] = useState<MentorOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchJadwals = useCallback(async () => {
@@ -189,6 +220,25 @@ export function useJadwalBimbinganAdmin({
     fetchJadwals();
   }, [fetchJadwals]);
 
+  /** Tarik agenda dari Google Calendar ke database, lalu muat ulang daftar jadwal. */
+  const syncFromGoogle = async (): Promise<void> => {
+    setSyncing(true);
+    try {
+      const response = await apiRequest<ApiItem<BackendSyncResult>>(`${JADWAL_ENDPOINT}/sync`, {
+        method: 'POST',
+      });
+      await fetchJadwals();
+      showSuccessAlert('Sinkronisasi Selesai', buildSyncMessage(response.data));
+    } catch (err) {
+      showToast(
+        'error',
+        err instanceof ApiError ? err.message : 'Gagal menarik jadwal dari Google Calendar.'
+      );
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const createJadwal = async (values: JadwalFormValues): Promise<boolean> => {
     const validationError = validateForm(values);
     if (validationError) {
@@ -207,7 +257,7 @@ export function useJadwalBimbinganAdmin({
       showSuccessAlert(
         'Jadwal Berhasil Ditambahkan!',
         values.syncGoogleCalendar && !created.googleCalendarSynced
-          ? `Agenda "${created.title}" telah tersimpan. Sinkronisasi Google Calendar belum aktif, jadwal ini belum masuk ke kalender.`
+          ? `Agenda "${created.title}" telah tersimpan. Sinkronisasi Google Calendar belum berhasil, jadwal ini belum masuk ke kalender.`
           : `Agenda "${created.title}" telah tersimpan.`
       );
       return true;
@@ -261,8 +311,10 @@ export function useJadwalBimbinganAdmin({
     students,
     mentors,
     loading,
+    syncing,
     error,
     refetch: fetchJadwals,
+    syncFromGoogle,
     createJadwal,
     updateJadwal,
     deleteJadwal,

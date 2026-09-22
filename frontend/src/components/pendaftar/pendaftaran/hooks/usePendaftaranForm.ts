@@ -43,16 +43,40 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
   const [submittedApp, setSubmittedApp] = useState<ApplicationStatus | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Muat draft yang tersimpan (kalau ada) sekali saat komponen pertama kali dirender
-  const [initialDraft] = useState<DraftState | null>(() => loadDraft());
+  // Muat draft yang tersimpan (kalau ada MILIK user yang sedang login) sekali
+  // saat komponen pertama kali dirender. loadDraft memvalidasi `userId` di
+  // dalam draft terhadap `user.id` -- draft basi milik user/sesi lain akan
+  // diabaikan (dan otomatis dihapus) alih-alih menimpa data user ini.
+  const [initialDraft] = useState<DraftState | null>(() => loadDraft(user.id));
 
   // Current Step: 1 = Biodata, 2 = Tipe Pendaftaran, 3 = Bidang & Kategori, 4 = Berkas, 5 = Review & Submit
   const [currentStep, setCurrentStep] = useState<number>(initialDraft?.currentStep ?? 1);
 
   // Step 1: Biodata State
-  const [biodata, setBiodata] = useState<BiodataState>(
-    initialDraft?.biodata ?? getDefaultBiodata(user)
-  );
+  // `fullName` & `email` SENGAJA selalu dipaksa ikut data akun (`user`),
+  // walau ada draft tersimpan -- kedua field ini di UI read-only (lihat
+  // StepBiodata), jadi tidak boleh ada kemungkinan draft lama (mis. hasil
+  // ketikan manual sebelumnya, atau draft dari sesi lain) menimpa data
+  // akun yang sedang login.
+  const [biodata, setBiodata] = useState<BiodataState>(() => {
+    const base = initialDraft?.biodata ?? getDefaultBiodata(user);
+    return {
+      ...base,
+      fullName: user.name || base.fullName,
+      email: user.email || base.email,
+    };
+  });
+
+  // Jaga-jaga kalau data akun berubah di tengah sesi (mis. setelah edit
+  // profil di tab lain) -- fullName & email di biodata ikut disinkronkan ulang.
+  useEffect(() => {
+    setBiodata((prev) => {
+      const nextFullName = user.name && prev.fullName !== user.name ? user.name : prev.fullName;
+      const nextEmail = user.email && prev.email !== user.email ? user.email : prev.email;
+      if (nextFullName === prev.fullName && nextEmail === prev.email) return prev;
+      return { ...prev, fullName: nextFullName, email: nextEmail };
+    });
+  }, [user.name, user.email]);
 
   // Objek File asli foto profil — terpisah dari `biodata.photoUrl` (yang
   // cuma blob URL untuk preview) supaya ada file nyata yang bisa dikirim
@@ -153,6 +177,7 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
 
     const timeout = setTimeout(() => {
       const draft: DraftState = {
+        userId: user.id,
         currentStep,
         biodata,
         registrationType,
@@ -173,6 +198,7 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
 
     return () => clearTimeout(timeout);
   }, [
+    user.id,
     currentStep,
     biodata,
     registrationType,
@@ -467,9 +493,9 @@ export function usePendaftaranForm({ user, onSubmitApplication, onSuccessSubmit 
       if (registrationType === 'Kelompok') {
         teamMembers.forEach((m, i) => {
           formData.append(`teamMembers[${i}][fullName]`, m.fullName);
-          formData.append(`teamMembers[${i}][email]`, m.email);
-          formData.append(`teamMembers[${i}][phone]`, m.phone);
-          formData.append(`teamMembers[${i}][nim]`, m.nim);
+          formData.append(`teamMembers[${i}][email]`, m.email ?? '');
+          formData.append(`teamMembers[${i}][phone]`, m.phone ?? '');
+          formData.append(`teamMembers[${i}][nim]`, m.nim ?? '');
         });
       }
 

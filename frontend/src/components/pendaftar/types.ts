@@ -21,6 +21,20 @@ export type {
 
 export type RegistrationType = 'Individu' | 'Kelompok';
 
+export type TeamMember = ApplicationTeamMember;
+
+export interface DocumentFile {
+  id: number;
+  name: string;
+  desc: string;
+  required: boolean;
+  format: string;
+  maxSize: string;
+  fileName?: string;
+  file?: File;
+  status: 'Belum Upload Berkas' | 'Berhasil Upload';
+}
+
 export const STEPS_LIST = [
   { num: 1, label: 'Biodata' },
   { num: 2, label: 'Tipe Pendaftaran' },
