@@ -39,9 +39,9 @@ class MentorBimbinganService
 
     /**
      * Setujui / tolak laporan. Alasan penolakan disimpan di catatan_reject
-     * dan dikosongkan lagi bila laporan disetujui.
+     * dan dikosongkan lagi bila laporan diterima.
      *
-     * @param  string  $apiStatus  'disetujui' | 'ditolak'
+     * @param  string  $apiStatus  'diterima' | 'ditolak'
      */
     public function updateLaporanStatus(
         Bimbingan $bimbingan,

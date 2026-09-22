@@ -43,7 +43,7 @@ export const BimbinganNilaiTab: React.FC<BimbinganNilaiTabProps> = ({ nilai, sav
                 <tr className="bg-slate-50/60 text-slate-900 font-bold border-b border-slate-200">
                   <th className="py-3.5 px-4 text-center w-12">No</th>
                   <th className="py-3.5 px-4">Aspek Penilaian</th>
-                  <th className="py-3.5 px-4 text-center w-36">Nilai Mentor (0-10)</th>
+                  <th className="py-3.5 px-4 text-center w-36">Nilai Mentor (0-100)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -57,7 +57,7 @@ export const BimbinganNilaiTab: React.FC<BimbinganNilaiTabProps> = ({ nilai, sav
                       <input
                         type="number"
                         min="0"
-                        max="10"
+                        max="100"
                         value={scores[key]}
                         onChange={(e) => handleScoreChange(key, Number(e.target.value))}
                         className="w-16 text-center border border-slate-200 rounded-lg py-1 px-2 font-bold text-slate-900 focus:outline-hidden focus:border-[#1f877c]"
@@ -79,7 +79,7 @@ export const BimbinganNilaiTab: React.FC<BimbinganNilaiTabProps> = ({ nilai, sav
               </div>
               <div className="text-right">
                 <span className="text-xl sm:text-2xl font-black text-[#1f877c]">
-                  {average} / 10
+                  {average} / 100
                 </span>
               </div>
             </div>

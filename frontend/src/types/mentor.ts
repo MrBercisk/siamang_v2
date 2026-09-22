@@ -42,3 +42,13 @@ export interface MentorCreateResult {
   success: boolean;
   temporaryPassword?: string;
 }
+
+export interface ChatMessage {
+  id: number | string;
+  bimbinganId: number | string;
+  senderId?: number | string;
+  sender: string;
+  role: 'mentor' | 'applicant';
+  message: string;
+  timestamp: string;
+}

@@ -1,12 +1,47 @@
-export function formatDate(dateString: string | null | undefined): string { 
-  if (!dateString) { return '-'; } 
-    try { const date = new Date(dateString); 
-      if (Number.isNaN(date.getTime())) { 
-        return dateString; } 
-        return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric', }).format(date); 
-      } 
-        catch { return dateString; } 
-      }
+export function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) {
+    return '-';
+  }
+  try {
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) {
+      return dateString;
+    }
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}
+
+/**
+ * Format timestamp ISO 8601 dari backend (biasanya UTC, mis. dari
+ * Carbon::toIso8601String()) jadi jam lokal WIB, contoh: "14:24 WIB".
+ * Dipakai untuk bubble chat di Forum Diskusi (mentor & peserta).
+ */
+export function formatChatTime(timestamp: string | null | undefined): string {
+  if (!timestamp) {
+    return '';
+  }
+  try {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return timestamp;
+    }
+    const time = new Intl.DateTimeFormat('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Jakarta',
+    }).format(date);
+    return `${time} WIB`;
+  } catch {
+    return timestamp;
+  }
+}
 
 export function getStatusBadgeClass(status: string): string {
   switch (status) {

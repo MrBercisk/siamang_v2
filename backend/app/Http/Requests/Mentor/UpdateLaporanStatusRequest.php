@@ -15,7 +15,7 @@ class UpdateLaporanStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::in(['disetujui', 'ditolak'])],
+            'status' => ['required', Rule::in(['diterima', 'ditolak'])],
             // Alasan penolakan (disimpan di laporan.catatan_reject), opsional.
             'catatan' => ['nullable', 'string', 'max:1000'],
         ];

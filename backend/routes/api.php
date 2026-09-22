@@ -8,10 +8,13 @@ use App\Http\Controllers\Api\LowonganController;
 use App\Http\Controllers\Api\MentorController;
 use App\Http\Controllers\Api\Mentor\MentorBimbinganController;
 use App\Http\Controllers\Api\Mentor\MentorDashboardController;
+use App\Http\Controllers\Api\Mentor\MentorForumController;
+use App\Http\Controllers\Api\Mentor\MentorPendaftarController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
 use App\Http\Controllers\Api\Admin\BimbinganAdminController;
 use App\Http\Controllers\Api\Admin\JadwalBimbinganAdminController;
+use App\Http\Controllers\Api\Pendaftar\PendaftarForumController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -90,8 +93,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     });
 });
 
-// Dashboard & bimbingan mentor — data dibatasi ke mentor yang login
-// (lihat MentorDashboardService dan MentorBimbinganService).
+// Dashboard, bimbingan, & pendaftar mentor — data dibatasi ke mentor yang login
+// (lihat MentorDashboardService, MentorBimbinganService, MentorPendaftarService).
 Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(function () {
     Route::get('/dashboard', [MentorDashboardController::class, 'index']);
 
@@ -100,4 +103,17 @@ Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(func
     Route::get('/bimbingans', [MentorBimbinganController::class, 'index']);
     Route::get('/bimbingans/{id}', [MentorBimbinganController::class, 'show']);
     Route::patch('/bimbingans/{id}/laporan/{laporanId}', [MentorBimbinganController::class, 'updateLaporan']);
+
+    // Forum per bimbingan, dibatasi ke mahasiswa yang dibimbing mentor login.
+    Route::get('/forum', [MentorForumController::class, 'index']);
+    Route::post('/forum', [MentorForumController::class, 'store']);
+
+    // Halaman Pendaftar Magang: baca saja — mentor tidak menerima/menolak,
+    // itu wewenang admin (lihat ApplicationAdminController::updateStatus).
+    Route::get('/pendaftars', [MentorPendaftarController::class, 'index']);
+});
+
+Route::middleware(['auth:sanctum', 'role:intern'])->prefix('intern')->group(function () {
+    Route::get('/forum', [PendaftarForumController::class, 'index']);
+    Route::post('/forum', [PendaftarForumController::class, 'store']);
 });

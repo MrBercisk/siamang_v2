@@ -13,7 +13,7 @@ class StoreNilaiRequest extends FormRequest
 
     public function rules(): array
     {
-        $score = ['required', 'numeric', 'between:0,10'];
+        $score = ['required', 'numeric', 'between:0,100'];
 
         return [
             'kehadiran' => $score,
