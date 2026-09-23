@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Pendaftar;
 
 use App\Http\Controllers\Api\Pendaftar\Concerns\ResolvesOwnBimbingan;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Pendaftar\PendaftarForumMessageRequest;
 use App\Http\Resources\Pendaftar\PendaftarForumMessageResource;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -23,17 +24,12 @@ class PendaftarForumController extends Controller
             ->orderBy('id')
             ->get();
 
-        return ApiResponse::data(
-            PendaftarForumMessageResource::collection($messages)
-        );
+        return ApiResponse::data(PendaftarForumMessageResource::collection($messages));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(PendaftarForumMessageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'message' => ['required', 'string', 'max:5000'],
-        ]);
-
+        $validated = $request->validated();
         $bimbingan = $this->findOwnBimbingan($request);
 
         $message = $bimbingan->forumMessages()->create([
