@@ -1,10 +1,7 @@
 import { showWarningAlert } from '../../../utils/swal';
 export type ReviewTab = 'dashboard' | 'pendaftaran' | 'riwayat' | 'profile';
 
-// Status aplikasi terakhir milik user, dipakai untuk menentukan boleh/tidaknya
-// membuka form pendaftaran baru. `null` berarti belum pernah mendaftar sama
-// sekali, atau aplikasi terakhirnya sudah "selesai siklusnya" (ditolak, atau
-// diterima dan periode magangnya sudah lewat) — sehingga boleh daftar lagi.
+
 export type PendaftaranLockReason =
   | { locked: true; reason: 'reviewing'; registrationNumber?: string }
   | { locked: true; reason: 'accepted-ongoing'; registrationNumber?: string; internshipEnd?: string }

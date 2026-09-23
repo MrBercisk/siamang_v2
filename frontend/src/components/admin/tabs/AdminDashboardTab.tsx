@@ -16,7 +16,7 @@ interface BackendAdminApplication {
   kategoriName?: string | null;
   status: AdminApplicationStatus;
   submittedAt?: string | null;
-  mentor?: { id: number; fullName: string } | null;
+  mentor?: { id: number; name: string } | null;
 }
 
 interface BackendBidang {
@@ -114,6 +114,7 @@ export function AdminDashboardTab() {
     () => applications.filter((app) => app.mentor).slice(0, 3),
     [applications]
   );
+  // console.log(assignedApplications);
 
   if (loading) {
     return (
@@ -307,7 +308,7 @@ export function AdminDashboardTab() {
                   <div className="flex-1">
                     <h4 className="text-xs font-bold text-slate-900">{app.applicantName}</h4>
                     <p className="text-[10px] text-slate-500">
-                      Mentor: {app.mentor?.fullName || '-'}
+                      Mentor: {app.mentor?.name || '-'}
                     </p>
                   </div>
                 </div>

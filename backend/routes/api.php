@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
 use App\Http\Controllers\Api\Admin\BimbinganAdminController;
 use App\Http\Controllers\Api\Admin\JadwalBimbinganAdminController;
+use App\Http\Controllers\Api\Pendaftar\PendaftarDashboardController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarForumController;
 use Illuminate\Support\Facades\Route;
 
@@ -116,4 +117,6 @@ Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(func
 Route::middleware(['auth:sanctum', 'role:intern'])->prefix('intern')->group(function () {
     Route::get('/forum', [PendaftarForumController::class, 'index']);
     Route::post('/forum', [PendaftarForumController::class, 'store']);
+    Route::get('/dashboard', [PendaftarDashboardController::class, 'index']);
+    Route::get('/jadwal-bimbingans', [PendaftarDashboardController::class, 'jadwal']);
 });

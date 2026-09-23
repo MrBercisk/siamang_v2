@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers\Api\Pendaftar;
 
+use App\Http\Controllers\Api\Pendaftar\Concerns\ResolvesOwnBimbingan;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Pendaftar\PendaftarForumMessageResource;
-use App\Models\Bimbingan;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PendaftarForumController extends Controller
 {
+    use ResolvesOwnBimbingan;
+
     public function index(Request $request): JsonResponse
     {
         $bimbingan = $this->findOwnBimbingan($request);
@@ -40,23 +42,9 @@ class PendaftarForumController extends Controller
             'is_mentor' => false,
         ]);
 
-        return response()->json([
-            'data' => new PendaftarForumMessageResource($message->load('sender:id,name')),
-        ], 201);
-    }
-
-    /**
-     * Pendaftar hanya punya satu bimbingan aktif, jadi tidak perlu id dari
-     * request. Sesuaikan kolom `pendaftar_id` kalau relasi Bimbingan ->
-     * User sebenarnya lewat nama kolom lain (mis. `user_id`) atau harus
-     * ditelusuri lewat relasi ke model Application.
-     */
-    private function findOwnBimbingan(Request $request): Bimbingan
-    {
-       return Bimbingan::whereHas('application', fn ($application) =>
-            $application->where('user_id', $request->user()->id)
-        )
-            ->latest()
-            ->firstOrFail();
+        return ApiResponse::data(
+            new PendaftarForumMessageResource($message->load('sender:id,name')),
+            201
+        );
     }
 }
