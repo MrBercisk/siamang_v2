@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Logbook extends Model
 {
     use HasFactory;
+    protected $table = 'logbooks';
 
     protected $fillable = ['user_id', 'log_date', 'activity', 'status', 'reviewer_notes'];
 

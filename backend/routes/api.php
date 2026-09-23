@@ -14,7 +14,10 @@ use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
 use App\Http\Controllers\Api\Admin\BimbinganAdminController;
 use App\Http\Controllers\Api\Admin\JadwalBimbinganAdminController;
+use App\Http\Controllers\Api\Pendaftar\PendaftarDashboardController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarForumController;
+use App\Http\Controllers\Api\Pendaftar\PendaftarLaporanController;
+use App\Http\Controllers\Api\Pendaftar\PendaftarProgressController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -116,4 +119,11 @@ Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(func
 Route::middleware(['auth:sanctum', 'role:intern'])->prefix('intern')->group(function () {
     Route::get('/forum', [PendaftarForumController::class, 'index']);
     Route::post('/forum', [PendaftarForumController::class, 'store']);
+    Route::get('/dashboard', [PendaftarDashboardController::class, 'index']);
+    Route::get('/jadwal-bimbingans', [PendaftarDashboardController::class, 'jadwal']);
+    Route::get('/progress', [PendaftarProgressController::class, 'index']);
+    Route::post('/progress', [PendaftarProgressController::class, 'store']);
+    Route::post('/progress/{id}', [PendaftarProgressController::class, 'update']);
+    Route::get('/laporan', [PendaftarLaporanController::class, 'index']);
+    Route::post('/laporan', [PendaftarLaporanController::class, 'store']);
 });

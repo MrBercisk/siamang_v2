@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { showToast } from '../../utils/swal';
-import { User } from '../../types/auth';
+import { showToast } from '../../../utils/swal';
+import { User } from '../../../types/auth';
 
 interface NilaiMagangPesertaViewProps {
   user?: User;

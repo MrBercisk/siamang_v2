@@ -16,7 +16,6 @@ export function AcceptedHeader({
   onLogout,
 }: AcceptedHeaderProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const displayName = user.name || 'Leona Strive';
   const displayEmail = user.email || 'leona@gmail.com';
@@ -45,34 +44,7 @@ export function AcceptedHeader({
       </div>
 
       <div className="flex items-center gap-3 sm:gap-5">
-        {/* Notification Icon */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-            title="Notifikasi"
-          >
-            <span className="material-symbols-outlined text-xl">notifications</span>
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
-          </button>
-
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
-                <h4 className="text-xs font-bold text-slate-800">Notifikasi Agenda</h4>
-                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">1 Baru</span>
-              </div>
-              <div className="space-y-2.5 text-xs">
-                <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
-                  <p className="font-bold text-emerald-900 text-[11px]">Jadwal Bimbingan Mentor</p>
-                  <p className="text-slate-600 text-[10px] mt-0.5">Sesi bimbingan tatap muka dilaksanakan besok jam 09:00 WIB.</p>
-                  <span className="text-[9px] text-slate-400 mt-1 block">2 Juni 2026, 09:00 WIB</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+      
 
         {/* User Profile */}
         <div className="relative">

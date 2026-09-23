@@ -28,16 +28,7 @@ export function MentorHeader({ user }: MentorHeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => showToast('info', 'Tidak ada notifikasi baru')}
-          className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors relative"
-          title="Notifikasi"
-        >
-          <span className="material-symbols-outlined text-xl">notifications</span>
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
-        </button>
-
+       
         <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
           <div className="w-9 h-9 rounded-full bg-[#1f877c] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
             <span className="material-symbols-outlined text-lg">account_circle</span>
@@ -50,9 +41,7 @@ export function MentorHeader({ user }: MentorHeaderProps) {
               {user.email || 'mentoraplikasi@gmail.com'}
             </span>
           </div>
-          <span className="material-symbols-outlined text-slate-400 text-sm hidden sm:inline">
-            expand_more
-          </span>
+         
         </div>
       </div>
     </header>
