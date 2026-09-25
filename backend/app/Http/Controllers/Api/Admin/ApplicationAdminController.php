@@ -72,7 +72,6 @@ class ApplicationAdminController extends Controller
                 $request->validated()
             );
         } catch (\InvalidArgumentException $e) {
-            // Dilempar oleh ApplicationObserver::assertMentorIsValid()
             throw ValidationException::withMessages([
                 'mentor_id' => [$e->getMessage()],
             ]);

@@ -8,9 +8,6 @@ use Illuminate\Support\Carbon;
 
 /**
  * @mixin \App\Models\Bimbingan
- *
- * Field file/foto dikirim sebagai path relatif di disk 'public'; frontend
- * mengubahnya jadi URL lewat resolveStorageUrl() (lib/api.ts).
  */
 class MentorBimbinganListResource extends JsonResource
 {

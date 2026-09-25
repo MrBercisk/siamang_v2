@@ -2,13 +2,7 @@
 
 namespace App\Support;
 
-/**
- * Menjembatani istilah status laporan antara API (frontend) dan kolom laporan.status.
- *
- * API selalu memakai: pending | diterima | ditolak.
- * Konstanta di bawah adalah nilai yang DITULIS ke database; sesuaikan bila tabel
- * laporan memakai istilah lain (mis. 'approved' / 'rejected').
- */
+
 final class LaporanStatus
 {
     public const PENDING = 'pending';

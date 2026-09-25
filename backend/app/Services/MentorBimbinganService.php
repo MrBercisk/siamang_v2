@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\LaporanStatus;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class MentorBimbinganService
@@ -26,7 +27,7 @@ class MentorBimbinganService
             ->get();
     }
 
-    /** 404 bila bimbingan tidak ada atau bukan milik mentor ini. */
+    /** 404 kalo bimbingan tidak ada atau bukan milik mentor ini */
     public function find(User $mentor, int $id): Bimbingan
     {
         return Bimbingan::with([
@@ -35,25 +36,19 @@ class MentorBimbinganService
             'progressItems' => fn ($query) => $query->orderBy('tanggal_bimbingan')->orderBy('id'),
             'laporan',
             'nilai',
-            // TODO: 'application.teamMembers' — menunggu kolom tabelnya.
         ])
             ->where('mentor_id', $mentor->id)
             ->findOrFail($id);
     }
 
-    /**
-     * Setujui / tolak laporan. Alasan penolakan disimpan di catatan_reject
-     * dan dikosongkan lagi bila laporan diterima.
-     *
-     * @param  string  $apiStatus  'diterima' | 'ditolak'
-     */
+   
     public function updateLaporanStatus(
         Bimbingan $bimbingan,
         int $laporanId,
         string $apiStatus,
         ?string $catatan = null
     ): Laporan {
-        // Dicari lewat relasi: laporan milik bimbingan lain -> 404.
+        // Dicari lewat relasi laporan milik bimbingan lain -> 404.
         $laporan = $bimbingan->laporan()->findOrFail($laporanId);
 
         $laporan->update([
@@ -64,43 +59,41 @@ class MentorBimbinganService
         return $laporan;
     }
 
-    /**
-     * Simpan/perbarui nilai magang mentor untuk satu bimbingan (upsert 1-1).
-     *
-     * @param  array{kehadiran:float,kemampuan_kerja:float,kualitas_kerja:float,kerjasama:float,inisiatif_kreativitas:float,disiplin:float}  $scores
-     *         Sudah dalam key snake_case sesuai kolom tabel `nilai` (dipetakan di controller).
-     */
+    /* Nilai magang */
     public function saveNilai(Bimbingan $bimbingan, array $scores, ?UploadedFile $suratFile = null): Nilai
     {
-        $rataRata = round(array_sum($scores) / count($scores), 1);
+        return DB::transaction(function () use ($bimbingan, $scores, $suratFile) {
+            $rataRata = round(array_sum($scores) / count($scores), 1);
 
-        $payload = [
-            ...$scores,
-            'predikat' => Nilai::predikatFromRataRata($rataRata),
-            'is_published' => true,
-        ];
+            $payload = [
+                ...$scores,
+                'predikat' => Nilai::predikatFromRataRata($rataRata),
+                'is_published' => true,
+            ];
 
-        if ($suratFile) {
-            // Hapus file lama dulu supaya tidak menumpuk di storage.
-            $existing = $bimbingan->nilai;
-            if ($existing?->surat_keterangan_path) {
-                Storage::disk('public')->delete($existing->surat_keterangan_path);
+            if ($suratFile) {
+                // Hapus file lama dulu
+                $existing = $bimbingan->nilai;
+                if ($existing?->surat_keterangan_path) {
+                    Storage::disk('public')->delete($existing->surat_keterangan_path);
+                }
+
+                // directory folder
+                $directory = 'applications/' . $bimbingan->application->registration_number . '/nilai';
+
+                $payload['surat_keterangan_path'] = $suratFile->store($directory, 'public');
+                $payload['surat_keterangan_name'] = $suratFile->getClientOriginalName();
             }
 
-            // Disimpan satu folder dengan berkas application lain
-            // (lihat ApplicationService::storeDocuments/storeProfilePhoto),
-            // supaya semua berkas satu peserta terkumpul rapi di satu tempat.
-            $directory = 'applications/' . $bimbingan->application->registration_number . '/nilai';
+            $nilai = Nilai::updateOrCreate(['bimbingan_id' => $bimbingan->id], $payload);
 
-            $payload['surat_keterangan_path'] = $suratFile->store($directory, 'public');
-            $payload['surat_keterangan_name'] = $suratFile->getClientOriginalName();
-        }
+            // Nilai sudah diisi mentor bimbingan dianggap selesai.
+            $bimbingan->update([
+                'status' => 'Selesai',
+                'last_update' => now(),
+            ]);
 
-        $nilai = Nilai::updateOrCreate(['bimbingan_id' => $bimbingan->id], $payload);
-
-        // 'rata_rata' adalah generated column di MySQL (dihitung otomatis dari
-        // 6 kolom nilai) — tidak boleh di-set manual, jadi cukup refresh
-        // supaya nilai terbaru yang dihitung MySQL ikut terbaca.
-        return $nilai->refresh();
+            return $nilai->refresh();
+        });
     }
 }

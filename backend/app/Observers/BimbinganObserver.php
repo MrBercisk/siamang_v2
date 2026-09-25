@@ -7,9 +7,8 @@ use App\Models\Bimbingan;
 class BimbinganObserver
 {
     /**
-     * Saat mentor menandai bimbingan 'Selesai', kembalikan role user
-     * dari 'intern' ke 'alumni' — supaya dia bisa daftar periode
-     * magang berikutnya tanpa nyangkut status 'intern' selamanya.
+     * Setelah bimbingan selesai, ubah role intern menjadi alumni
+     * agar user dapat mengikuti periode magang berikutnya
      */
     public function updated(Bimbingan $bimbingan): void
     {
@@ -24,3 +23,4 @@ class BimbinganObserver
         }
     }
 }
+

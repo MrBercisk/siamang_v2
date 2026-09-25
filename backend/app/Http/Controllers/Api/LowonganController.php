@@ -10,8 +10,7 @@ use Illuminate\Http\Request;
 class LowonganController extends Controller
 {
     /**
-     * Publik — daftar lowongan magang. Default hanya yang aktif & masih
-     * ada kuota tersisa, filter opsional per periode/kategori/bidang.
+     * Publik 
      */
     public function index(Request $request): JsonResponse
     {
@@ -60,8 +59,7 @@ class LowonganController extends Controller
         ]);
 
         // 'filled' selalu mulai dari 0 — tidak boleh di-set manual lewat
-        // request, karena nilainya bergantung jumlah application yang
-        // accepted (lihat catatan di method update()).
+        // request, karena nilainya bergantung jumlah application yang di terima
         $lowongan = Lowongan::create([...$validated, 'filled' => 0]);
 
         return response()->json([
@@ -82,9 +80,6 @@ class LowonganController extends Controller
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        // 'filled' sengaja tidak masuk daftar rules di atas — kolom ini
-        // hanya boleh berubah lewat proses accept application (nanti di
-        // ApplicationController Fase 3), bukan lewat form edit lowongan.
         $lowongan->update($validated);
 
         return response()->json([

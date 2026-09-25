@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Application;
+use App\Models\Bimbingan;
 use App\Observers\ApplicationObserver;
+use App\Observers\BimbinganObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +24,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Application::observe(ApplicationObserver::class);
-        // Bimbingan::observe(BimbinganObserver::class); // kalau kamu jadi pakai validasi tambahan ini
+        Bimbingan::observe(BimbinganObserver::class);
     }
 }

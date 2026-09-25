@@ -18,13 +18,13 @@ class PendaftarProgressController extends Controller
     use ResolvesOwnBimbingan;
 
     /**
-     * Total sesi progress yang dianggap 100%. Asumsi: magang ~3 bulan,
-     * bimbingan progress tiap 2 minggu sekali → 6 kali pertemuan.
-     * Sesuaikan angka ini kalau kebijakan durasi/frekuensi berubah.
+     * Target jumlah progress untuk mencapai 100%.
+     *
+     * Saat ini mengikuti asumsi magang sekitar 3 bulan
+     * dengan evaluasi progress setiap 2 minggu.
      */
     private const TARGET_PROGRESS_COUNT = 6;
 
-    // GET /intern/progress
     public function index(Request $request): JsonResponse
     {
         $bimbingan = $this->findOwnBimbingan($request);
@@ -34,18 +34,19 @@ class PendaftarProgressController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return ApiResponse::data(PendaftarProgressItemResource::collection($items));
+        return ApiResponse::data(
+            PendaftarProgressItemResource::collection($items)
+        );
     }
 
-    // POST /intern/progress (multipart)
     public function store(PendaftarProgressStoreRequest $request): JsonResponse
     {
         $validated = $request->validated();
-
         $bimbingan = $this->findOwnBimbingan($request);
-        $file = $request->file('file_presentasi');
 
+        $file = $request->file('file_presentasi');
         $directory = 'applications/' . $bimbingan->application->registration_number . '/progress';
+
         $path = $file->store($directory, 'public');
 
         $item = $bimbingan->progressItems()->create([
@@ -60,14 +61,17 @@ class PendaftarProgressController extends Controller
 
         $this->syncProgress($bimbingan);
 
-        return ApiResponse::data(new PendaftarProgressItemResource($item), 201);
+        return ApiResponse::data(
+            new PendaftarProgressItemResource($item),
+            201
+        );
     }
 
-    // POST /intern/progress/{id}
-    public function update(PendaftarProgressUpdateRequest $request, int $id): JsonResponse
-    {
+    public function update(
+        PendaftarProgressUpdateRequest $request,
+        int $id
+    ): JsonResponse {
         $validated = $request->validated();
-
         $bimbingan = $this->findOwnBimbingan($request);
         $item = $bimbingan->progressItems()->findOrFail($id);
 
@@ -80,8 +84,10 @@ class PendaftarProgressController extends Controller
             if ($item->file_presentasi) {
                 Storage::disk('public')->delete($item->file_presentasi);
             }
+
             $file = $request->file('file_presentasi');
             $directory = 'applications/' . $bimbingan->application->registration_number . '/progress';
+
             $item->file_presentasi = $file->store($directory, 'public');
             $item->file_name = $file->getClientOriginalName();
         }
@@ -89,22 +95,25 @@ class PendaftarProgressController extends Controller
         $item->tanggal_upload = now();
         $item->save();
 
-        // Edit tidak menambah jumlah entri, jadi progress_percent tidak
-        // dihitung ulang di sini — tapi last_update tetap perlu di-refresh
-        // karena ada aktivitas baru pada bimbingan ini.
+        // Edit tidak menambah jumlah progress, tetapi tetap dianggap
+        // sebagai aktivitas terbaru pada bimbingan
         $bimbingan->update(['last_update' => now()]);
 
-        return ApiResponse::data(new PendaftarProgressItemResource($item));
+        return ApiResponse::data(
+            new PendaftarProgressItemResource($item)
+        );
     }
 
     /**
-     * Hitung ulang progress_percent berdasarkan jumlah progress item yang
-     * sudah disubmit, lalu simpan ke tabel bimbingan bersama last_update.
+     * Menyesuaikan progress bimbingan berdasarkan jumlah progress yang sudah dikirim.
      */
     private function syncProgress(Bimbingan $bimbingan): void
     {
         $count = $bimbingan->progressItems()->count();
-        $percent = min(100, (int) round(($count / self::TARGET_PROGRESS_COUNT) * 100));
+        $percent = min(
+            100,
+            (int) round(($count / self::TARGET_PROGRESS_COUNT) * 100)
+        );
 
         $bimbingan->update([
             'progress_percent' => $percent,

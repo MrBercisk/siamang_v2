@@ -65,8 +65,7 @@ class MentorController extends Controller
     }
     private function generateTemporaryPassword(): string
     {
-        // 10 karakter, campuran huruf besar/kecil/angka — cukup kuat tapi manusiawi
-        // untuk diketik ulang manual oleh mentor saat login pertama.
+        // 10 karakter, campuran huruf besar/kecil/angka 
         return Str::password(10, symbols: false);
     }
 
@@ -88,16 +87,6 @@ class MentorController extends Controller
         ]);
     }
 
-    /**
-     * Hapus mentor sepenuhnya (row User dihapus, bukan soft delete) —
-     * ditolak selama mentor masih punya bimbingan (apa pun statusnya),
-     * supaya mahasiswa bimbingannya dialokasikan ulang dulu ke mentor lain.
-     *
-     * Catatan: kalau nanti mau lebih longgar (misal hanya blokir untuk
-     * bimbingan yang statusnya belum 'selesai'), tambahkan
-     * ->where('status', '!=', 'selesai') di bawah — sesuaikan dengan nilai
-     * enum status yang dipakai di tabel `bimbingan`.
-     */
     public function destroy(User $mentor): JsonResponse
     {
         $this->ensureIsMentor($mentor);

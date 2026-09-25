@@ -16,7 +16,7 @@ class PendaftarDashboardController extends Controller
 {
     use ResolvesOwnBimbingan;
 
-    // GET /intern/dashboard — ringkasan 3 card atas
+    // GET /intern/dashboard
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();

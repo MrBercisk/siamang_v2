@@ -56,8 +56,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        // Hanya cabut token yang sedang dipakai request ini,
-        // bukan semua token milik user (biar device lain tetap login).
+        // Hanya cabut token yang sedang dipakai request ini
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([

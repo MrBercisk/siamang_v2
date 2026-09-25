@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 class PeriodeController extends Controller
 {
     /**
-     * Publik — daftar semua periode (buat halaman riwayat/arsip).
+     * Publik 
      */
     public function index(): JsonResponse
     {
@@ -20,11 +20,7 @@ class PeriodeController extends Controller
         ]);
     }
 
-    /**
-     * Publik — periode yang sedang buka pendaftaran. Dipakai landing page
-     * pendaftaran untuk tahu periode mana yang aktif tanpa admin harus
-     * kirim ID manual dari frontend.
-     */
+   
     public function active(): JsonResponse
     {
         $periode = Periode::where('is_active', true)->first();
@@ -79,8 +75,7 @@ class PeriodeController extends Controller
 
     public function destroy(Periode $periode): JsonResponse
     {
-        // Cegah hapus periode yang sudah punya lowongan/pendaftaran —
-        // ini adalah data riwayat, bukan sekadar master data kosong.
+        // Cegah hapus periode yang sudah punya lowongan/pendaftaran 
         if ($periode->lowongans()->exists() || $periode->applications()->exists()) {
             return response()->json([
                 'message' => 'Periode ini sudah punya lowongan/pendaftaran terkait, tidak bisa dihapus. Nonaktifkan saja.',
