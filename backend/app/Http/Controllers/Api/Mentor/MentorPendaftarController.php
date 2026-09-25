@@ -15,7 +15,7 @@ class MentorPendaftarController extends Controller
         private MentorPendaftarService $pendaftarService
     ) {}
 
-    /** Daftar pendaftar pada kategori yang diampu mentor yang login. */
+    /** Daftar pendaftar pada kategori yang diampu mentor yang login */
     public function index(Request $request): JsonResponse
     {
         return ApiResponse::data(

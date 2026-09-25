@@ -22,9 +22,6 @@ class UpdateApplicationStatusRequest extends FormRequest
             ],
             'admin_notes' => ['nullable', 'string', 'max:1000'],
 
-            // Wajib diisi kalau status yang dikirim = 'accepted', karena
-            // ApplicationObserver akan menolak transisi ke 'accepted' tanpa
-            // mentor_id yang valid.
             'mentor_id' => [
                 Rule::requiredIf(fn () => $this->input('status') === 'accepted'),
                 'nullable',

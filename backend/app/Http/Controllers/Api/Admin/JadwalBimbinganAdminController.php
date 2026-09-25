@@ -20,8 +20,8 @@ class JadwalBimbinganAdminController extends Controller
     ) {}
 
     /**
-     * Filter opsional: month, year, student_user_id, mentor_user_id.
-     * Tidak dipaginasi karena kalender butuh semua jadwal pada rentang yang dilihat.
+     * menampilkan daftar jadwal bimbingan
+     * bisa difilter
      */
     public function index(Request $request): JsonResponse
     {
@@ -34,16 +34,17 @@ class JadwalBimbinganAdminController extends Controller
         );
     }
 
-    /** Pilihan untuk form tambah jadwal: mahasiswa (application accepted) & mentor aktif. */
+    /** Menyediakan data pilihan form jadwal
+     * mahasiswa yang sudah diterima dan mentor aktif
+    */
     public function options(): JsonResponse
     {
         return ApiResponse::data($this->jadwalService->options());
     }
 
-    /**
-     * Tarik agenda dari Google Calendar lalu masukkan ke database.
-     * Respons: { data: { created, updated, deleted, skipped: [{ title, reason }] } }
-     */
+   /** 
+    * Menyinkronkan agenda dari Google Calendar ke database 
+    * Hanya data yang perlu dibuat, diperbarui, atau dihapus yang akan diproses oleh service */
     public function sync(): JsonResponse
     {
         try {

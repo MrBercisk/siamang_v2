@@ -10,14 +10,6 @@ use Illuminate\Validation\Rule;
 
 class BidangController extends Controller
 {
-    /**
-     * Publik — dipakai halaman pendaftaran untuk pilih bidang.
-     * Query aman untuk dipakai tanpa login, jadi hanya tampilkan yang aktif
-     * kecuali diminta eksplisit oleh admin lewat query ?all=1.
-     *
-     * Soft-deleted bidang otomatis tidak ikut ke sini (global scope bawaan
-     * SoftDeletes), jadi tidak perlu filter tambahan.
-     */
     public function index(Request $request): JsonResponse
     {
         $query = Bidang::query()->withCount('kategori');
@@ -38,11 +30,6 @@ class BidangController extends Controller
         ]);
     }
 
-    /**
-     * Admin — daftar bidang yang sudah di-soft-delete (Sampah).
-     * kategori_count dihitung TERMASUK kategori yang ikut ter-arsip, supaya
-     * admin tahu berapa kategori yang akan ikut pulih kalau bidang direstore.
-     */
     public function trashed(): JsonResponse
     {
         return response()->json([
@@ -53,8 +40,7 @@ class BidangController extends Controller
         ]);
     }
 
-    // Method di bawah ini hanya boleh diakses admin — dibatasi lewat
-    // middleware 'role:admin' di routes, bukan dicek manual di sini.
+    // Method hanya boleh diakses admin
 
     public function store(Request $request): JsonResponse
     {
@@ -86,11 +72,6 @@ class BidangController extends Controller
         ]);
     }
 
-    /**
-     * Soft delete: bidang dipindahkan ke Sampah, kategori di bawahnya ikut
-     * diarsipkan otomatis (lihat Bidang::booted()), dan semuanya bisa
-     * dipulihkan lewat restore().
-     */
     public function destroy(Bidang $bidang): JsonResponse
     {
         $bidang->delete();
@@ -100,11 +81,6 @@ class BidangController extends Controller
         ]);
     }
 
-    /**
-     * Pulihkan bidang dari Sampah. Route model binding standar tidak dipakai
-     * di sini (pakai int $id + onlyTrashed()) karena binding implisit Laravel
-     * akan 404 untuk record yang sudah soft-deleted.
-     */
     public function restore(int $id): JsonResponse
     {
         $bidang = Bidang::onlyTrashed()->findOrFail($id);
@@ -116,12 +92,6 @@ class BidangController extends Controller
         ]);
     }
 
-    /**
-     * Hapus permanen dari Sampah — tidak bisa dibatalkan/dipulihkan lagi.
-     * Ditolak kalau masih ada kategori terkait (termasuk yang masih di
-     * Sampah), supaya tidak meninggalkan data kategori yang datang tanpa
-     * bidang induk dan tidak bisa direstore lagi.
-     */
     public function forceDelete(int $id): JsonResponse
     {
         $bidang = Bidang::onlyTrashed()->findOrFail($id);

@@ -62,7 +62,7 @@ class MentorBimbinganController extends Controller
             $request->file('suratKeterangan')
         );
 
-        // Muat ulang supaya resource membawa relasi nilai yang baru disimpan.
+        // Muat ulang resource membawa relasi nilai yang baru disimpan
         $bimbingan = $this->bimbinganService->find($request->user(), $id);
 
         return ApiResponse::data(new MentorBimbinganDetailResource($bimbingan));

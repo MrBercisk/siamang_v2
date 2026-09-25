@@ -55,10 +55,6 @@ class AdminApplicationResource extends JsonResource
 
             'periode' => $this->periode?->name,
 
-            // mentor_id di Application = mentor yang di-assign admin
-            // SEBELUM/SAAT proses acceptance. Kalau bimbingan sudah
-            // terbentuk, tampilkan data dari sana karena itu source of
-            // truth untuk mentor yang sedang aktif.
             'mentor' => $this->when(
                 $this->bimbingan?->mentor,
                 fn () => [

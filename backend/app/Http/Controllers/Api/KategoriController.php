@@ -11,11 +11,7 @@ use Illuminate\Validation\Rule;
 class KategoriController extends Controller
 {
     /**
-     * Publik — dipakai halaman pendaftaran untuk pilih kategori,
-     * biasanya di-filter per bidang lewat ?bidang_id=.
-     *
-     * withCount('applications') ditambahkan supaya admin bisa menampilkan
-     * jumlah pendaftar per kategori tanpa query terpisah.
+     * Publik 
      */
     public function index(Request $request): JsonResponse
     {
@@ -42,7 +38,7 @@ class KategoriController extends Controller
     }
 
     /**
-     * Admin — daftar kategori yang sudah di-soft-delete (Sampah).
+     * Admin 
      */
     public function trashed(Request $request): JsonResponse
     {
@@ -93,11 +89,6 @@ class KategoriController extends Controller
         ]);
     }
 
-    /**
-     * Soft delete. Tetap ditolak (422) kalau masih dipakai lowongan atau
-     * sudah pernah dipilih di application, supaya riwayat pendaftaran lama
-     * tidak kehilangan referensi kategorinya.
-     */
     public function destroy(Kategori $kategori): JsonResponse
     {
         if ($kategori->lowongans()->exists() || $kategori->applications()->exists()) {
@@ -112,11 +103,6 @@ class KategoriController extends Controller
             'message' => 'Kategori berhasil dipindahkan ke Sampah.',
         ]);
     }
-
-    /**
-     * Pulihkan kategori dari Sampah. Pakai int $id + onlyTrashed() karena
-     * route model binding implisit 404 untuk record yang sudah soft-deleted.
-     */
     public function restore(int $id): JsonResponse
     {
         $kategori = Kategori::onlyTrashed()->findOrFail($id);
@@ -128,11 +114,6 @@ class KategoriController extends Controller
         ]);
     }
 
-    /**
-     * Hapus permanen dari Sampah — tidak bisa dibatalkan. Tetap dicek ulang
-     * relasi lowongan/application untuk jaga-jaga (mis. dibuat lagi setelah
-     * kategori masuk Sampah).
-     */
     public function forceDelete(int $id): JsonResponse
     {
         $kategori = Kategori::onlyTrashed()->findOrFail($id);

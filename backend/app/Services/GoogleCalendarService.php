@@ -9,16 +9,6 @@ use Google\Service\Calendar\Event;
 use Google\Service\Exception as GoogleServiceException;
 use RuntimeException;
 
-/**
- * Pembungkus tipis Google Calendar API untuk satu kalender bersama milik instansi.
- *
- * Autentikasi memakai service account: kalender dibagikan ke email service account
- * (izin "Make changes to events"), lalu ID kalender diisi di .env.
- *
- * Catatan: service account biasa TIDAK bisa mengundang tamu (attendees). Undangan ke
- * mahasiswa & mentor baru berfungsi bila domain-wide delegation aktif dan
- * GOOGLE_CALENDAR_IMPERSONATE diisi (lihat canInvite()).
- */
 class GoogleCalendarService
 {
     private ?GoogleCalendar $calendar = null;

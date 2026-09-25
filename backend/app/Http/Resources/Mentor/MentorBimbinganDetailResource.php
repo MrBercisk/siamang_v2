@@ -13,8 +13,6 @@ class MentorBimbinganDetailResource extends MentorBimbinganListResource
     public function toArray(Request $request): array
     {
         return array_merge(parent::toArray($request), [
-            // TODO: isi dari application->teamMembers bila kolom TeamMember sudah diketahui.
-            // Format: [['nama' => '...', 'isKetua' => true], ...]. Kosong = blok anggota disembunyikan.
             'anggota' => [],
 
             'progressList' => $this->progressItems->map(fn ($item) => [
@@ -25,7 +23,7 @@ class MentorBimbinganDetailResource extends MentorBimbinganListResource
                 'filePresentasiUrl' => $item->file_presentasi,
             ])->values(),
 
-            // Relasi laporan() adalah hasOne: satu laporan per bimbingan.
+            // satu laporan per bimbingan.
             'laporanList' => $this->laporan ? [[
                 'id' => $this->laporan->id,
                 'judulLaporan' => $this->laporan->judul_laporan,

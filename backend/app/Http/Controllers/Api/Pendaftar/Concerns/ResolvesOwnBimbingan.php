@@ -8,10 +8,10 @@ use Illuminate\Http\Request;
 trait ResolvesOwnBimbingan
 {
     /**
-     * Pendaftar hanya punya satu bimbingan aktif, jadi tidak perlu id dari
-     * request. Sesuaikan kolom `user_id` kalau relasi Bimbingan -> User
-     * sebenarnya lewat nama kolom lain atau ditelusuri lewat relasi lain
-     * ke model Application.
+     * Mengambil bimbingan milik pendaftar yang sedang login.
+     *
+     * Pendaftar tidak perlu mengirim ID bimbingan karena
+     * data bisa ditelusuri dari application miliknya
      */
     private function findOwnBimbingan(Request $request): Bimbingan
     {
