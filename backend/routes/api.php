@@ -102,11 +102,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:mentor'])->prefix('mentor')->group(function () {
     Route::get('/dashboard', [MentorDashboardController::class, 'index']);
 
-    // Halaman Bimbingan Mahasiswa: daftar, detail, dan setujui/tolak laporan.
-    // POST /bimbingans/{id}/nilai menyusul (menunggu kolom model Nilai).
+    // Halaman Bimbingan Mahasiswa: daftar, detail, setujui/tolak laporan, dan input nilai.
     Route::get('/bimbingans', [MentorBimbinganController::class, 'index']);
     Route::get('/bimbingans/{id}', [MentorBimbinganController::class, 'show']);
     Route::patch('/bimbingans/{id}/laporan/{laporanId}', [MentorBimbinganController::class, 'updateLaporan']);
+    Route::post('/bimbingans/{id}/nilai', [MentorBimbinganController::class, 'storeNilai']);
 
     // Forum per bimbingan, dibatasi ke mahasiswa yang dibimbing mentor login.
     Route::get('/forum', [MentorForumController::class, 'index']);

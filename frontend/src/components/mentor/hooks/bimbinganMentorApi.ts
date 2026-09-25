@@ -23,7 +23,8 @@ import type {
  * - GET   /mentor/bimbingans                        -> { data: BackendBimbinganListItem[] }
  * - GET   /mentor/bimbingans/{id}                   -> { data: BackendBimbinganDetail }
  * - POST  /mentor/bimbingans/{id}/nilai             -> multipart, { data: BackendBimbinganDetail }
- * - PATCH /mentor/bimbingans/{id}/laporan/{laporanId} -> { status: 'disetujui' | 'ditolak' }
+ * - PATCH /mentor/bimbingans/{id}/laporan/{laporanId} -> { status: 'diterima' | 'ditolak', catatan?: string }
+ *   (kontrak API selalu pending | diterima | ditolak — lihat App\Support\LaporanStatus)
  */
 
 export const BIMBINGAN_ENDPOINT = '/mentor/bimbingans';
@@ -69,7 +70,8 @@ interface BackendLaporan {
   fileLaporanUrl?: string | null;
   linkProject?: string | null;
   formNilaiUrl?: string | null;
-  status?: string | null; // "pending" | "disetujui" | "ditolak"
+  status?: string | null; // "pending" | "diterima" | "ditolak"
+  catatan_reject?: string | null;
 }
 
 type BackendNilai = Partial<Record<NilaiKey, number | null>> & {
@@ -104,9 +106,10 @@ function mapStatus(value?: string | null): BimbinganStatus {
   return value && /selesai|completed|done/i.test(value) ? 'Selesai' : 'On Progress';
 }
 
+/** Samakan dengan App\Support\LaporanStatus::toApi(): backend selalu kirim 'diterima', bukan 'disetujui'. */
 function mapLaporanStatus(value?: string | null): LaporanStatus {
   const normalized = (value ?? '').toLowerCase();
-  if (normalized === 'disetujui') return 'disetujui';
+  if (normalized === 'diterima') return 'diterima';
   if (normalized === 'ditolak') return 'ditolak';
   return 'pending';
 }
@@ -149,6 +152,7 @@ function mapLaporan(item: BackendLaporan): LaporanItem {
     linkProject: item.linkProject || undefined,
     formNilaiUrl: resolveStorageUrl(item.formNilaiUrl) ?? undefined,
     status: mapLaporanStatus(item.status),
+    catatanReject: item.catatan_reject || undefined,
   };
 }
 
@@ -209,13 +213,15 @@ export async function submitNilai(
   return mapDetail(response.data);
 }
 
+/** status: 'diterima' | 'ditolak' — samakan dengan App\Support\LaporanStatus::toDatabase(). */
 export async function setLaporanStatus(
   id: string,
   laporanId: string,
-  status: 'disetujui' | 'ditolak'
+  status: 'diterima' | 'ditolak',
+  catatan?: string
 ): Promise<void> {
   await apiRequest(`${BIMBINGAN_ENDPOINT}/${id}/laporan/${laporanId}`, {
     method: 'PATCH',
-    data: { status },
+    data: { status, catatan },
   });
 }

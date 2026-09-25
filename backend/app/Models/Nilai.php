@@ -46,14 +46,14 @@ class Nilai extends Model
     }
 
     /**
-     * Hitung predikat berdasarkan rata_rata, sesuai skala di PRD §4.12.
+     * Hitung predikat berdasarkan rata_rata, skala 0-100 (PRD §4.12).
      */
     public static function predikatFromRataRata(float $rataRata): string
     {
         return match (true) {
-            $rataRata >= 8.5 => 'Sangat Baik (A)',
-            $rataRata >= 7.0 => 'Baik (B)',
-            $rataRata >= 5.5 => 'Cukup (C)',
+            $rataRata >= 85 => 'Sangat Baik (A)',
+            $rataRata >= 70 => 'Baik (B)',
+            $rataRata >= 55 => 'Cukup (C)',
             default => 'Belum Lulus (D)',
         };
     }

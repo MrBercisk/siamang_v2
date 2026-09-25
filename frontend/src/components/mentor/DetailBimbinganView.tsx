@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useBimbinganMentorDetail } from './hooks/useBimbinganMentorDetail';
 import { BimbinganProfileCard } from './bimbingan/BimbinganProfileCard';
 import { BimbinganDetailTabs, type DetailTabKey } from './bimbingan/BimbinganDetailTabs';
@@ -26,6 +26,20 @@ export const DetailBimbinganView: React.FC<DetailBimbinganViewProps> = ({
     saveNilai,
     updateLaporanStatus,
   } = useBimbinganMentorDetail(bimbinganId);
+
+  // Nilai baru bisa diisi setelah ada laporan yang berstatus 'diterima'.
+  const isNilaiLocked = useMemo(
+    () => !detail?.laporanList.some((laporan) => laporan.status === 'diterima'),
+    [detail]
+  );
+
+  // Jaga-jaga: kalau tab 'nilai' sedang aktif tapi jadi terkunci lagi
+  // (mis. laporan yang tadinya diterima berubah), kembalikan ke tab progress.
+  useEffect(() => {
+    if (isNilaiLocked && activeTab === 'nilai') {
+      setActiveTab('progress');
+    }
+  }, [isNilaiLocked, activeTab]);
 
   return (
     <div className="space-y-6 animate-fade-in font-sans text-slate-800">
@@ -66,7 +80,11 @@ export const DetailBimbinganView: React.FC<DetailBimbinganViewProps> = ({
             <BimbinganProfileCard detail={detail} />
 
             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-              <BimbinganDetailTabs active={activeTab} onChange={setActiveTab} />
+              <BimbinganDetailTabs
+                active={activeTab}
+                onChange={setActiveTab}
+                isNilaiLocked={isNilaiLocked}
+              />
 
               {activeTab === 'progress' && <BimbinganProgressTab items={detail.progressList} />}
 

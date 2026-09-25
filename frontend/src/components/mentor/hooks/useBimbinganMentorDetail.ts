@@ -9,15 +9,7 @@ import {
   submitNilai,
 } from './bimbinganMentorApi';
 
-/**
- * Lokasi file: src/components/mentor/hooks/useBimbinganMentorDetail.ts
- *
- * Detail satu bimbingan + aksi mentor: simpan penilaian dan setujui/tolak laporan.
- * Sengaja tidak memakai useApi: layar ini punya tiga operasi berbeda (muat, simpan
- * nilai, ubah status laporan) yang butuh loading sendiri-sendiri dan tidak boleh
- * mengosongkan data saat berjalan. Toast & alert ditangani di sini
- * (pola sama dengan useJadwalBimbinganAdmin).
- */
+
 export function useBimbinganMentorDetail(id: string) {
   const [detail, setDetail] = useState<BimbinganDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +42,7 @@ export function useBimbinganMentorDetail(id: string) {
       const average = calculateAverage(scores);
       showSuccessAlert(
         'Penilaian Berhasil Disimpan!',
-        `Nilai rata-rata ${average}/10 (${getPredikat(average)}) telah tersimpan untuk ${updated.nama}.`
+        `Nilai rata-rata ${average}/100 (${getPredikat(average)}) telah tersimpan untuk ${updated.nama}.`
       );
       return true;
     } catch (err) {
@@ -63,7 +55,8 @@ export function useBimbinganMentorDetail(id: string) {
 
   const updateLaporanStatus = async (
     laporanId: string,
-    status: 'disetujui' | 'ditolak'
+    status: 'diterima' | 'ditolak',
+    catatan?: string
   ): Promise<void> => {
     const laporan = detail?.laporanList.find((item) => item.id === laporanId);
     if (!laporan) return;
@@ -79,20 +72,22 @@ export function useBimbinganMentorDetail(id: string) {
 
     setUpdatingLaporanId(laporanId);
     try {
-      await setLaporanStatus(id, laporanId, status);
+      await setLaporanStatus(id, laporanId, status, catatan);
       setDetail((prev) =>
         prev
           ? {
               ...prev,
               laporanList: prev.laporanList.map((item) =>
-                item.id === laporanId ? { ...item, status } : item
+                item.id === laporanId
+                  ? { ...item, status, catatanReject: status === 'ditolak' ? catatan : undefined }
+                  : item
               ),
             }
           : prev
       );
       showToast(
-        status === 'disetujui' ? 'success' : 'info',
-        status === 'disetujui' ? 'Laporan disetujui!' : 'Laporan ditolak / minta revisi.'
+        status === 'diterima' ? 'success' : 'info',
+        status === 'diterima' ? 'Laporan disetujui!' : 'Laporan ditolak / minta revisi.'
       );
     } catch (err) {
       showToast('error', err instanceof ApiError ? err.message : 'Gagal memperbarui status laporan.');
