@@ -1,9 +1,9 @@
 export const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ];
 
-export const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const WEEKDAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', "Jum'at", 'Sab'];
 
 export const pad = (value: number) => String(value).padStart(2, '0');
 

@@ -10,8 +10,23 @@ import {
 
 function formatIndoDate(dateStr: string | null): string {
   if (!dateStr) return '-';
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return `${d} ${MONTH_NAMES[m - 1]} ${y}`;
+
+  // Ambil bagian tanggal saja, buang time/timezone kalau backend
+  // ternyata masih mengirim format ISO penuh (jaga-jaga / defense in depth)
+  const [datePart] = dateStr.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+
+  if (!y || !m || !d) return '-';
+
+  // Konstruksi manual (y, m-1, d) supaya dianggap tanggal lokal,
+  // bukan UTC midnight — menghindari pergeseran tanggal akibat timezone
+  const date = new Date(y, m - 1, d);
+
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
 }
 
 export function AcceptedDashboardTab() {

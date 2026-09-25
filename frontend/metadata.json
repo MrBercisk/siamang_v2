@@ -1,6 +1,6 @@
 {
   "name": "SIAMANG - Sistem Informasi Magang DISKOMINFOSAN Kota Yogyakarta",
-  "description": "Sistem Informasi Aplikasi Magang DISKOMINFOSAN Kota Yogyakarta. Pendaftaran magang, informasi bidang, status seleksi, dan logbook harian.",
+  "description": "Sistem Informasi Aplikasi Magang DISKOMINFOSAN Kota Yogyakarta. Pendaftaran magang, informasi bidang, status seleksi, dan progress harian.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

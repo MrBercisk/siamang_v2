@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pendaftar\PendaftarProgressStoreRequest;
 use App\Http\Requests\Pendaftar\PendaftarProgressUpdateRequest;
 use App\Http\Resources\Pendaftar\PendaftarProgressItemResource;
+use App\Models\Bimbingan;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,13 @@ use Illuminate\Support\Facades\Storage;
 class PendaftarProgressController extends Controller
 {
     use ResolvesOwnBimbingan;
+
+    /**
+     * Total sesi progress yang dianggap 100%. Asumsi: magang ~3 bulan,
+     * bimbingan progress tiap 2 minggu sekali → 6 kali pertemuan.
+     * Sesuaikan angka ini kalau kebijakan durasi/frekuensi berubah.
+     */
+    private const TARGET_PROGRESS_COUNT = 6;
 
     // GET /intern/progress
     public function index(Request $request): JsonResponse
@@ -36,7 +44,9 @@ class PendaftarProgressController extends Controller
 
         $bimbingan = $this->findOwnBimbingan($request);
         $file = $request->file('file_presentasi');
-        $path = $file->store('progress-presentasi', 'public');
+
+        $directory = 'applications/' . $bimbingan->application->registration_number . '/progress';
+        $path = $file->store($directory, 'public');
 
         $item = $bimbingan->progressItems()->create([
             'judul_project' => $validated['judul_project'],
@@ -47,6 +57,8 @@ class PendaftarProgressController extends Controller
             'file_name' => $file->getClientOriginalName(),
             'tanggal_upload' => now(),
         ]);
+
+        $this->syncProgress($bimbingan);
 
         return ApiResponse::data(new PendaftarProgressItemResource($item), 201);
     }
@@ -69,13 +81,34 @@ class PendaftarProgressController extends Controller
                 Storage::disk('public')->delete($item->file_presentasi);
             }
             $file = $request->file('file_presentasi');
-            $item->file_presentasi = $file->store('progress-presentasi', 'public');
+            $directory = 'applications/' . $bimbingan->application->registration_number . '/progress';
+            $item->file_presentasi = $file->store($directory, 'public');
             $item->file_name = $file->getClientOriginalName();
         }
 
         $item->tanggal_upload = now();
         $item->save();
 
+        // Edit tidak menambah jumlah entri, jadi progress_percent tidak
+        // dihitung ulang di sini — tapi last_update tetap perlu di-refresh
+        // karena ada aktivitas baru pada bimbingan ini.
+        $bimbingan->update(['last_update' => now()]);
+
         return ApiResponse::data(new PendaftarProgressItemResource($item));
+    }
+
+    /**
+     * Hitung ulang progress_percent berdasarkan jumlah progress item yang
+     * sudah disubmit, lalu simpan ke tabel bimbingan bersama last_update.
+     */
+    private function syncProgress(Bimbingan $bimbingan): void
+    {
+        $count = $bimbingan->progressItems()->count();
+        $percent = min(100, (int) round(($count / self::TARGET_PROGRESS_COUNT) * 100));
+
+        $bimbingan->update([
+            'progress_percent' => $percent,
+            'last_update' => now(),
+        ]);
     }
 }

@@ -6,21 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     
+     */
     public function up(): void
     {
-        Schema::create('logbooks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users');
-            $table->date('log_date');
-            $table->text('activity');
-            $table->enum('status', ['Menunggu Review', 'Disetujui', 'Ditolak'])->default('Menunggu Review');
-            $table->text('reviewer_notes')->nullable();
-            $table->timestamps();
-        });
+        Schema::dropIfExists('logbooks');
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('logbooks');
+        Schema::create('logbooks', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->date('log_date');
+            $table->text('activity');
+            $table->string('status')->default('pending');
+            $table->text('reviewer_notes')->nullable();
+            $table->timestamps();
+        });
     }
 };
