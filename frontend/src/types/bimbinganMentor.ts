@@ -1,7 +1,8 @@
 /** Lokasi file: src/types/bimbinganMentor.ts */
 
 export type BimbinganStatus = 'On Progress' | 'Selesai';
-export type LaporanStatus = 'pending' | 'disetujui' | 'ditolak';
+/** Samakan dengan kontrak API & App\Support\LaporanStatus: pending | diterima | ditolak. */
+export type LaporanStatus = 'pending' | 'diterima' | 'ditolak';
 
 /** Satu baris di tabel daftar bimbingan mentor. */
 export interface BimbinganListItem {
@@ -38,6 +39,7 @@ export interface LaporanItem {
   linkProject?: string;
   formNilaiUrl?: string;
   status: LaporanStatus;
+  catatanReject?: string;
 }
 
 /** Aspek penilaian mentor — satu sumber untuk form, hitung rata-rata, dan payload API. */

@@ -33,10 +33,19 @@ class MentorBimbinganDetailResource extends MentorBimbinganListResource
                 'linkProject' => $this->laporan->link_google_drive,
                 'formNilaiUrl' => $this->laporan->form_nilai,
                 'status' => LaporanStatus::toApi($this->laporan->status),
+                'catatan_reject' => $this->laporan->catatan_reject,
             ]] : [],
 
-            // TODO: isi dari relasi nilai() bila kolom model Nilai sudah diketahui.
-            'nilai' => null,
+            'nilai' => $this->nilai ? [
+                'kehadiran' => (float) $this->nilai->kehadiran,
+                'kemampuanKerja' => (float) $this->nilai->kemampuan_kerja,
+                'kualitasKerja' => (float) $this->nilai->kualitas_kerja,
+                'kerjasama' => (float) $this->nilai->kerjasama,
+                'inisiatifKreativitas' => (float) $this->nilai->inisiatif_kreativitas,
+                'disiplin' => (float) $this->nilai->disiplin,
+                'suratKeteranganName' => $this->nilai->surat_keterangan_name,
+                'suratKeteranganUrl' => $this->nilai->surat_keterangan_path,
+            ] : null,
         ]);
     }
 }

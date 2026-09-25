@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mentor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Mentor\StoreNilaiRequest;
 use App\Http\Requests\Mentor\UpdateLaporanStatusRequest;
 use App\Http\Resources\Mentor\MentorBimbinganDetailResource;
 use App\Http\Resources\Mentor\MentorBimbinganListResource;
@@ -34,8 +35,6 @@ class MentorBimbinganController extends Controller
         return ApiResponse::data(new MentorBimbinganDetailResource($bimbingan));
     }
 
-    // TODO: storeNilai() — menunggu kolom model Nilai.
-
     public function updateLaporan(UpdateLaporanStatusRequest $request, int $id, int $laporanId): JsonResponse
     {
         $bimbingan = $this->bimbinganService->find($request->user(), $id);
@@ -50,5 +49,22 @@ class MentorBimbinganController extends Controller
         return response()->json([
             'message' => 'Status laporan berhasil diperbarui.',
         ]);
+    }
+
+    /** Simpan 6 nilai magang + (opsional) surat keterangan untuk satu bimbingan. */
+    public function storeNilai(StoreNilaiRequest $request, int $id): JsonResponse
+    {
+        $bimbingan = $this->bimbinganService->find($request->user(), $id);
+
+        $this->bimbinganService->saveNilai(
+            $bimbingan,
+            $request->scores(),
+            $request->file('suratKeterangan')
+        );
+
+        // Muat ulang supaya resource membawa relasi nilai yang baru disimpan.
+        $bimbingan = $this->bimbinganService->find($request->user(), $id);
+
+        return ApiResponse::data(new MentorBimbinganDetailResource($bimbingan));
     }
 }
