@@ -10,7 +10,7 @@
 
 **Tujuan:** Portal pendaftaran & manajemen magang untuk instansi pemerintah (DISKOMINFOSAN Kota Yogyakarta — terlihat dari branding di frontend). Mencakup alur: pendaftaran online oleh calon peserta magang → seleksi/verifikasi oleh admin → bimbingan oleh mentor → pelaporan & penilaian akhir.
 
-**Masalah yang ingin diselesaikan:** Digitalisasi proses magang yang sebelumnya manual — mulai dari pendaftaran berkas, penempatan bidang/kategori, bimbingan berkala, logbook, hingga penerbitan nilai/sertifikat.
+**Masalah yang ingin diselesaikan:** Digitalisasi proses magang yang sebelumnya manual — mulai dari pendaftaran berkas, penempatan bidang/kategori, bimbingan berkala progress, laporan, hingga penerbitan nilai/sertifikat.
 
 **Kondisi Saat Ini (Keseluruhan):** 🟡 **Sebagian / Perlu Penyempurnaan**
 
@@ -87,8 +87,8 @@ siamang/
 ```
 
 **Fungsi folder penting:**
-- `backend/app/Models` — representasi lengkap seluruh entitas bisnis (Bidang, Kategori, Periode, Lowongan, Application, TeamMember, DocumentFile, Bimbingan, ProgressItem, Laporan, Nilai, JadwalBimbingan, ForumMessage, Logbook, Announcement) — relasi Eloquent sudah didefinisikan dengan baik di masing-masing model.
-- `backend/app/Http/Controllers/Api` — baru mencakup Auth + 4 Master Data. **Tidak ada controller** untuk Application, Bimbingan, Laporan, Nilai, JadwalBimbingan, ForumMessage, Logbook, Announcement, DocumentFile.
+- `backend/app/Models` — representasi lengkap seluruh entitas bisnis (Bidang, Kategori, Periode, Lowongan, Application, TeamMember, DocumentFile, Bimbingan, ProgressItem, Laporan, Nilai, JadwalBimbingan, ForumMessage, Announcement) — relasi Eloquent sudah didefinisikan dengan baik di masing-masing model.
+- `backend/app/Http/Controllers/Api` — baru mencakup Auth + 4 Master Data. **Tidak ada controller** untuk Application, Bimbingan, Laporan, Nilai, JadwalBimbingan, ForumMessage, Announcement, DocumentFile.
 - `frontend/src/data` — sumber data untuk dashboard Mentor & Admin; ini **pengganti sementara** API yang belum ada.
 
 ---
@@ -106,7 +106,7 @@ siamang/
 | Pendaftaran Magang (backend)        | 🔴     | — | Model `Application`, `TeamMember`, `DocumentFile` + migration sudah ada, tapi **tidak ada `ApplicationController` atau route** apa pun. |
 | Auto role sync saat application diterima/ditolak | 🔴 | `ApplicationObserver` | Logika lengkap (ubah role user, auto-create Bimbingan) tapi **observer tidak pernah didaftarkan**, jadi tidak pernah berjalan. |
 | Bimbingan (mentor-peserta)          | 🔴     | Model + migration ada | Tidak ada controller/route. UI mentor (`BimbinganTab.tsx`, dsb.) pakai sample data. |
-| Progress/Logbook magang             | 🔴     | Model `ProgressItem`, `Logbook` + migration ada | Tidak ada controller/route. |
+| Progress           | 🔴     | Model `ProgressItem` + migration ada | Tidak ada controller/route. |
 | Forum Diskusi (mentor↔peserta)      | 🔴     | Model `ForumMessage` + migration ada | UI ada (`ForumDiskusiTab.tsx`, `ForumDiskusiPesertaTab.tsx`) tapi tidak ada backend. |
 | Laporan Akhir Magang                | 🔴     | Model `Laporan` + migration ada | UI ada (`LaporanMagangPesertaView.tsx`) tapi state lokal saja. |
 | Penilaian (Nilai) & Predikat        | 🔴     | Model `Nilai` (dengan generated column `rata_rata` & helper `predikatFromRataRata`) | Logic perhitungan sudah disiapkan di model, tapi tidak ada controller/route untuk mengisi/menampilkan nilai dari DB. |
@@ -127,7 +127,7 @@ siamang/
 - Model Eloquent untuk fitur lanjutan (Application, Bimbingan, dll.) — struktur & relasi lengkap, tapi tanpa controller/route yang memanfaatkannya.
 
 ### Belum Dibuat
-- Semua controller/route untuk: Application (pendaftaran), Bimbingan, ProgressItem, Laporan, Nilai, JadwalBimbingan, ForumMessage, Logbook, Announcement, DocumentFile (upload berkas).
+- Semua controller/route untuk: Application (pendaftaran), Bimbingan, ProgressItem, Laporan, Nilai, JadwalBimbingan, ForumMessage, Announcement, DocumentFile (upload berkas).
 - Registrasi observer (`ApplicationObserver`, `BimbinganObserver`) di `AppServiceProvider`.
 - Seeder untuk master data (Bidang/Kategori/Periode contoh) dan user admin/mentor default.
 - Integrasi Google Calendar.
@@ -218,7 +218,7 @@ users
   ├── has many application (via mentor_id, sebagai mentor)
   ├── has many bimbingan (via mentor_id)
   ├── has many jadwal_bimbingan (via student_user_id & mentor_user_id)
-  ├── has many logbooks
+  ├── has many progress
   └── has many forum_messages (via sender_id)
 
 bidang
@@ -254,7 +254,6 @@ progress_items      → belongs to bimbingan
 laporan             → belongs to bimbingan
 nilai               → belongs to bimbingan (unique 1:1), rata_rata = generated column DB
 jadwal_bimbingan    → belongs to users (student & mentor), berdiri sendiri
-logbooks            → belongs to user
 announcements       → tabel independen, tanpa relasi
 personal_access_tokens → tabel bawaan Sanctum
 ```
@@ -288,7 +287,6 @@ Catatan dari kode: file `routes/api.php` secara eksplisit berkomentar bahwa isin
 - `/api/bimbingan/*`, `/api/progress-items/*`, `/api/laporan/*`, `/api/nilai/*`
 - `/api/jadwal-bimbingan/*`
 - `/api/forum-messages/*`
-- `/api/logbooks/*`
 - `/api/announcements/*`
 - Upload dokumen (`document_files`)
 
@@ -433,7 +431,7 @@ Catatan dari kode: file `routes/api.php` secara eksplisit berkomentar bahwa isin
 6. **Hubungkan Admin & Mentor dashboard ke API asli (ganti sample data)**
    - Bagian yang disentuh: `frontend/src/components/admin/**`, `frontend/src/components/mentor/**`, buat hook baru serupa `useInternshipData` untuk masing-masing domain (mis. `useApplications`, `useBimbingan`).
 
-7. **Implementasikan controller untuk Bimbingan, ProgressItem, Laporan, Nilai, JadwalBimbingan, ForumMessage, Logbook, Announcement**
+7. **Implementasikan controller untuk Bimbingan, ProgressItem, Laporan, Nilai, JadwalBimbingan, ForumMessage, Announcement**
    - Bagian yang disentuh: `app/Http/Controllers/Api/*`, `routes/api.php`.
 
 8. **Implementasikan upload berkas nyata** (pas foto, berkas persyaratan, laporan, form nilai, surat keterangan)
@@ -468,7 +466,7 @@ Verifikasi & (bila perlu) perbaiki nama tabel Eloquent
      ↓
 Bangun Fase 3: Controller Application + upload dokumen + koneksi form pendaftaran frontend
      ↓
-Bangun Fase 4: Controller Bimbingan, Progress, Laporan, Nilai, Jadwal, Forum, Logbook
+Bangun Fase 4: Controller Bimbingan, Progress, Laporan, Nilai, Jadwal, Forum
      ↓
 Ganti seluruh sample data Admin/Mentor dengan data API asli
      ↓
@@ -516,7 +514,7 @@ Overall Progress: sekitar 30–35% (perkiraan berdasarkan jumlah fase/controller
 
 🔴 Not Started:
 - Controller/route untuk: Application, Bimbingan, ProgressItem, Laporan, Nilai,
-  JadwalBimbingan, ForumMessage, Logbook, Announcement
+  JadwalBimbingan, ForumMessage, Announcement
 - Upload berkas nyata (storage handler)
 - Registrasi Observer (ApplicationObserver, BimbinganObserver)
 - Seeder master data & user default

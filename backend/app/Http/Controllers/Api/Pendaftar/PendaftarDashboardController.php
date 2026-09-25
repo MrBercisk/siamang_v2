@@ -32,7 +32,9 @@ class PendaftarDashboardController extends Controller
             ->where('event_date', '<=', now()->toDateString())
             ->count();
 
-        $endDate = $bimbingan->application?->end_date;
+        $endDate = $bimbingan->application?->internship_end
+            ? Carbon::parse($bimbingan->application->internship_end)->toDateString()
+            : null;
         $remainingDays = $endDate
             ? max(0, (int) now()->startOfDay()->diffInDays(Carbon::parse($endDate), false))
             : null;

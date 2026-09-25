@@ -122,7 +122,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
 
                 <h5 className="font-bold text-slate-800 text-base pt-2">3. Laporan & Evaluasi Magang</h5>
                 <ul className="list-disc pl-5 space-y-1 text-slate-600 text-xs sm:text-sm">
-                  <li>Mengisi Logbook Harian pada dashboard SIAMANG.</li>
+                  <li>Mengisi progress bimbingan secara berkala pada dashboard SIAMANG</li>
                   <li>Menyusun Laporan Akhir Magang di bawah bimbingan Pembimbing Lapangan.</li>
                   <li>Sertifikat Magang diterbitkan setelah seluruh laporan disetujui.</li>
                 </ul>
@@ -159,7 +159,7 @@ export function FooterModal({ type, onClose, onNavigate }: FooterModalProps) {
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <div className="w-7 h-7 rounded-lg bg-[#005c55] text-white flex items-center justify-center font-bold text-xs mb-2">4</div>
                   <h5 className="font-bold text-slate-800 mb-1">Sertifikasi & Penilaian</h5>
-                  <p className="text-xs text-slate-500">Pengisian logbook harian, presentasi hasil karya, serta penerbitan Sertifikat Magang Resmi.</p>
+                  <p className="text-xs text-slate-500">Pengisian progress bimbingan, presentasi hasil karya, serta penerbitan Sertifikat Magang Resmi.</p>
                 </div>
               </div>
             </div>

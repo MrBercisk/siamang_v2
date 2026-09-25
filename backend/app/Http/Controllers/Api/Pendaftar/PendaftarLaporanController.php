@@ -59,6 +59,8 @@ class PendaftarLaporanController extends Controller
             return ApiResponse::error('File laporan wajib diunggah.', 422);
         }
 
+        $baseDirectory = 'applications/' . $bimbingan->application->registration_number;
+
         $data = [
             'judul_laporan' => $validated['judul_laporan'],
             'link_google_drive' => $validated['link_google_drive'],
@@ -72,7 +74,7 @@ class PendaftarLaporanController extends Controller
                 Storage::disk('public')->delete($existing->file_laporan);
             }
             $file = $request->file('file_laporan');
-            $data['file_laporan'] = $file->store('laporan', 'public');
+            $data['file_laporan'] = $file->store($baseDirectory . '/laporan', 'public');
             $data['file_laporan_name'] = $file->getClientOriginalName();
         }
 
@@ -81,7 +83,7 @@ class PendaftarLaporanController extends Controller
                 Storage::disk('public')->delete($existing->form_nilai);
             }
             $file = $request->file('form_nilai');
-            $data['form_nilai'] = $file->store('form-nilai', 'public');
+            $data['form_nilai'] = $file->store($baseDirectory . '/form-nilai', 'public');
             $data['form_nilai_name'] = $file->getClientOriginalName();
         }
 
