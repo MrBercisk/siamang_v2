@@ -5,15 +5,19 @@ use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\BidangController;
 use App\Http\Controllers\Api\KategoriController;
 use App\Http\Controllers\Api\LowonganController;
-use App\Http\Controllers\Api\MentorController;
 use App\Http\Controllers\Api\Mentor\MentorBimbinganController;
 use App\Http\Controllers\Api\Mentor\MentorDashboardController;
 use App\Http\Controllers\Api\Mentor\MentorForumController;
 use App\Http\Controllers\Api\Mentor\MentorPendaftarController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\Admin\ApplicationAdminController;
+use App\Http\Controllers\Api\Admin\BidangAdminController;
 use App\Http\Controllers\Api\Admin\BimbinganAdminController;
 use App\Http\Controllers\Api\Admin\JadwalBimbinganAdminController;
+use App\Http\Controllers\Api\Admin\KategoriAdminController;
+use App\Http\Controllers\Api\Admin\LowonganAdminController;
+use App\Http\Controllers\Api\Admin\MentorAdminController;
+use App\Http\Controllers\Api\Admin\PeriodeAdminController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarDashboardController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarForumController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarLaporanController;
@@ -49,30 +53,29 @@ Route::apiResource('periodes', PeriodeController::class)->only(['index', 'show']
 Route::apiResource('lowongans', LowonganController::class)->only(['index', 'show']);
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-    Route::apiResource('bidangs', BidangController::class)->only(['store', 'update', 'destroy']);
+    Route::apiResource('bidangs', BidangAdminController::class)->only(['store', 'update', 'destroy']);
 
-    // Soft delete (Sampah) untuk bidang — taruh sebelum/di luar apiResource
-    // supaya tidak bentrok dengan route {bidang} di atas.
-    Route::get('/bidangs-trashed', [BidangController::class, 'trashed']);
-    Route::patch('/bidangs/{id}/restore', [BidangController::class, 'restore']);
-    Route::delete('/bidangs/{id}/force', [BidangController::class, 'forceDelete']);
+    // trashed/restore/force taruh di luar apiResource biar {bidang} di atas ga nangkep duluan
+    Route::get('/bidangs-trashed', [BidangAdminController::class, 'trashed']);
+    Route::patch('/bidangs/{id}/restore', [BidangAdminController::class, 'restore']);
+    Route::delete('/bidangs/{id}/force', [BidangAdminController::class, 'forceDelete']);
 
-    Route::apiResource('kategoris', KategoriController::class)->only(['store', 'update', 'destroy']);
+    Route::apiResource('kategoris', KategoriAdminController::class)->only(['store', 'update', 'destroy']);
 
-    // Soft delete (Sampah) untuk kategori.
-    Route::get('/kategoris-trashed', [KategoriController::class, 'trashed']);
-    Route::patch('/kategoris/{id}/restore', [KategoriController::class, 'restore']);
-    Route::delete('/kategoris/{id}/force', [KategoriController::class, 'forceDelete']);
-    Route::apiResource('periodes', PeriodeController::class)->only(['store', 'update', 'destroy']);
-    Route::apiResource('lowongans', LowonganController::class)->only(['store', 'update', 'destroy']);
+    // sama kayak bidang, trashed/restore/force di luar apiResource
+    Route::get('/kategoris-trashed', [KategoriAdminController::class, 'trashed']);
+    Route::patch('/kategoris/{id}/restore', [KategoriAdminController::class, 'restore']);
+    Route::delete('/kategoris/{id}/force', [KategoriAdminController::class, 'forceDelete']);
+    Route::apiResource('periodes', PeriodeAdminController::class)->only(['store', 'update', 'destroy']);
+    Route::apiResource('lowongans', LowonganAdminController::class)->only(['store', 'update', 'destroy']);
 
     // Kelola mentor (User berrole 'mentor') + alokasi kategori via pivot kategori_mentor.
     Route::prefix('mentors')->group(function () {
-        Route::get('/', [MentorController::class, 'index']);
-        Route::post('/', [MentorController::class, 'store']);
-        Route::get('/{mentor}', [MentorController::class, 'show']);
-        Route::put('/{mentor}', [MentorController::class, 'update']);
-        Route::delete('/{mentor}', [MentorController::class, 'destroy']);
+        Route::get('/', [MentorAdminController::class, 'index']);
+        Route::post('/', [MentorAdminController::class, 'store']);
+        Route::get('/{mentor}', [MentorAdminController::class, 'show']);
+        Route::put('/{mentor}', [MentorAdminController::class, 'update']);
+        Route::delete('/{mentor}', [MentorAdminController::class, 'destroy']);
     });
 
     Route::prefix('admin')->group(function () {
