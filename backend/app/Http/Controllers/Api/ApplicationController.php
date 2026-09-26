@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApplicationRequest;
+use App\Http\Requests\TrackApplicationRequest;
 use App\Http\Resources\ApplicationResource;
 use App\Http\Resources\ApplicationTrackResource;
 use App\Services\ApplicationService;
@@ -41,16 +42,12 @@ class ApplicationController extends Controller
             201
         );
     }
-    public function track(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'registration_number' => ['required', 'string'],
-            'email' => ['required', 'email'],
-        ]);
 
+    public function track(TrackApplicationRequest $request): JsonResponse
+    {
         $application = $this->applicationService->findForTracking(
-            $validated['registration_number'],
-            $validated['email']
+            $request->validated('registration_number'),
+            $request->validated('email')
         );
 
         if (! $application) {
