@@ -1,0 +1,167 @@
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useInternChat } from '../hooks/useInternChat';
+
+// Mapping elemen markdown -> class Tailwind, disamakan dengan skala teks (text-xs)
+// yang dipakai komponen lain di dashboard peserta.
+const markdownComponents = {
+  p: (props: React.ComponentProps<'p'>) => (
+    <p className="text-xs leading-relaxed text-slate-700 mb-2 last:mb-0" {...props} />
+  ),
+  strong: (props: React.ComponentProps<'strong'>) => (
+    <strong className="font-bold text-slate-900" {...props} />
+  ),
+  ul: (props: React.ComponentProps<'ul'>) => (
+    <ul className="list-disc pl-4 space-y-1 text-xs text-slate-700 mb-2" {...props} />
+  ),
+  ol: (props: React.ComponentProps<'ol'>) => (
+    <ol className="list-decimal pl-4 space-y-1 text-xs text-slate-700 mb-2" {...props} />
+  ),
+  li: (props: React.ComponentProps<'li'>) => <li {...props} />,
+  h1: (props: React.ComponentProps<'h4'>) => (
+    <h4 className="text-xs font-bold text-slate-900 mt-2 mb-1" {...props} />
+  ),
+  h2: (props: React.ComponentProps<'h4'>) => (
+    <h4 className="text-xs font-bold text-slate-900 mt-2 mb-1" {...props} />
+  ),
+  h3: (props: React.ComponentProps<'h4'>) => (
+    <h4 className="text-xs font-bold text-slate-900 mt-2 mb-1" {...props} />
+  ),
+  table: (props: React.ComponentProps<'table'>) => (
+    <div className="overflow-x-auto mb-2 rounded-lg border border-slate-200">
+      <table className="min-w-full text-[11px]" {...props} />
+    </div>
+  ),
+  thead: (props: React.ComponentProps<'thead'>) => (
+    <thead className="bg-slate-50" {...props} />
+  ),
+  th: (props: React.ComponentProps<'th'>) => (
+    <th
+      className="px-2 py-1.5 text-left font-bold text-slate-700 border-b border-slate-200"
+      {...props}
+    />
+  ),
+  td: (props: React.ComponentProps<'td'>) => (
+    <td className="px-2 py-1.5 text-slate-600 border-b border-slate-100" {...props} />
+  ),
+  code: (props: React.ComponentProps<'code'>) => (
+    <code className="bg-slate-100 rounded px-1 py-0.5 text-[11px]" {...props} />
+  ),
+  a: (props: React.ComponentProps<'a'>) => (
+    <a className="text-[#1f877c] underline" target="_blank" rel="noreferrer" {...props} />
+  ),
+};
+
+export function ChatWidget() {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const { messages, sending, sendMessage } = useInternChat();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages, sending, open]);
+
+  const handleSend = () => {
+    if (!input.trim() || sending) return;
+    void sendMessage(input);
+    setInput('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return createPortal(
+    <>
+      {/* Tombol bubble mengambang, selalu terlihat di semua tab */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#1f877c] text-white shadow-xl flex items-center justify-center hover:bg-[#186b62] transition-colors cursor-pointer"
+        aria-label="Buka asisten SIAMANG"
+      >
+        <span className="material-symbols-outlined text-2xl">{open ? 'close' : 'chat'}</span>
+      </button>
+
+      {open && (
+        <div className="fixed bottom-24 right-5 z-40 w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white rounded-2xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+          <div className="px-4 py-3 bg-[#1f877c] text-white flex items-center gap-2 shrink-0">
+            <span className="material-symbols-outlined text-lg">smart_toy</span>
+            <div>
+              <p className="text-xs font-bold leading-none">Asisten SIAMANG</p>
+              <p className="text-[10px] text-teal-50/80 mt-0.5">Tanya seputar magangmu</p>
+            </div>
+          </div>
+
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-slate-50/60">
+            {messages.length === 0 && (
+              <p className="text-[11px] text-slate-400 text-center mt-6">
+                Coba tanya: &quot;Berapa nilai magang saya?&quot; atau &quot;Kapan jadwal bimbingan
+                saya?&quot;
+              </p>
+            )}
+
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                    msg.role === 'user'
+                      ? 'bg-[#1f877c] text-white text-xs'
+                      : msg.isError
+                      ? 'bg-red-50 border border-red-200 text-red-700 text-xs'
+                      : 'bg-white border border-slate-200 text-slate-700'
+                  }`}
+                >
+                  {msg.role === 'assistant' ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-xs">{msg.content}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {sending && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-slate-200 rounded-2xl px-3 py-2">
+                  <p className="text-xs text-slate-400">Sedang mengetik...</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-3 border-t border-slate-200 bg-white flex items-end gap-2 shrink-0">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Tulis pertanyaan..."
+              rows={1}
+              className="flex-1 resize-none text-xs border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1f877c]/30 max-h-24"
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={sending || !input.trim()}
+              className="w-9 h-9 rounded-xl bg-[#1f877c] text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shrink-0"
+              aria-label="Kirim pesan"
+            >
+              <span className="material-symbols-outlined text-lg">send</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </>,
+    document.body
+  );
+}

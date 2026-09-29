@@ -11,21 +11,25 @@ class PendaftarLaporanResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $forAi = $request->boolean('for_ai');
+
         return [
             'id' => $this->id,
             'judulLaporan' => $this->judul_laporan,
-            'fileLaporanUrl' => $this->file_laporan
+            'fileLaporanUrl' => $forAi ? null : ($this->file_laporan
                 ? Storage::disk('public')->url($this->file_laporan)
-                : null,
+                : null),
             'fileLaporanName' => $this->file_laporan_name,
-            'linkGoogleDrive' => $this->link_google_drive,
-            'formNilaiUrl' => $this->form_nilai
+            'linkGoogleDrive' => $forAi ? null : $this->link_google_drive,
+            'formNilaiUrl' => $forAi ? null : ($this->form_nilai
                 ? Storage::disk('public')->url($this->form_nilai)
-                : null,
+                : null),
             'formNilaiName' => $this->form_nilai_name,
             'status' => $this->status, // pending | ditolak | diterima
             'catatanReject' => $this->catatan_reject,
-            'tanggalUpload' => $this->tanggal_upload?->toIso8601String(),
+            'tanggalUpload' => $forAi
+                ? $this->tanggal_upload?->toDateString()
+                : $this->tanggal_upload?->toIso8601String(),
             'canEdit' => $this->status === 'ditolak'
                 || ($this->status === 'pending'
                     && $this->tanggal_upload

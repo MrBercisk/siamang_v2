@@ -10,6 +10,7 @@ import { AcceptedHeader } from '../../components/pendaftar/layout/AcceptedHeader
 import { AcceptedSidebar, AcceptedTab } from '../../components/pendaftar/layout/AcceptedSidebar';
 import { AcceptedDashboardTab } from '../../components/pendaftar/tabs/AcceptedDashboardTab';
 import { ForumDiskusiPesertaTab } from '../../components/pendaftar/tabs/ForumDiskusiPesertaTab';
+import { ChatWidget } from '../../components/pendaftar/intern/ChatWidget';
 
 interface PendaftarAcceptedDashboardProps {
   user: User;
@@ -55,11 +56,12 @@ export function PendaftarAcceptedDashboard({
           {activeTab === 'progress' && <ProgressMagangPesertaView />}
           {activeTab === 'forum' && <ForumDiskusiPesertaTab user={user} />}
           {activeTab === 'laporan' && <LaporanMagangPesertaView />}
-          {activeTab === 'nilai' && <NilaiMagangPesertaView user={user} />}
+          {activeTab === 'nilai' && <NilaiMagangPesertaView />}
           {activeTab === 'riwayat' && <RiwayatMagangView applications={applications} />}
           {activeTab === 'profile' && <ProfileView user={user} />}
         </main>
       </div>
+       <ChatWidget />
     </div>
   );
 }

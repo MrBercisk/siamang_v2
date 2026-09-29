@@ -11,17 +11,21 @@ class PendaftarProgressItemResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $forAi = $request->boolean('for_ai');
+
         return [
             'id' => $this->id,
             'judulProject' => $this->judul_project,
             'tanggalBimbingan' => $this->tanggal_bimbingan?->toDateString(),
             'pencapaian' => $this->pencapaian,
             'catatan' => $this->catatan,
-            'filePresentasiUrl' => $this->file_presentasi
+            'filePresentasiUrl' => $forAi ? null : ($this->file_presentasi
                 ? Storage::disk('public')->url($this->file_presentasi)
-                : null,
+                : null),
             'fileName' => $this->file_name,
-            'tanggalUpload' => $this->tanggal_upload?->toIso8601String(),
+            'tanggalUpload' => $forAi
+                ? $this->tanggal_upload?->toDateString()
+                : $this->tanggal_upload?->toIso8601String(),
         ];
     }
 }
