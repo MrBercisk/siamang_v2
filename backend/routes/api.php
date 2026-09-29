@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Pendaftar\PendaftarForumController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarLaporanController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarNilaiController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarProgressController;
+use App\Http\Controllers\Api\N8nController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -132,4 +133,7 @@ Route::middleware(['auth:sanctum', 'role:intern'])->prefix('intern')->group(func
     Route::post('/laporan', [PendaftarLaporanController::class, 'store']);
 
     Route::get('/nilai', [PendaftarNilaiController::class, 'index']);
+
+    // chat AI (n8n)
+    Route::post('/chat', [N8nController::class, 'chat']);
 });

@@ -11,6 +11,8 @@ class PendaftarNilaiResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $forAi = $request->boolean('for_ai');
+
         return [
             'isPublished' => (bool) $this->is_published,
             'predikat' => $this->is_published ? $this->predikat : null,
@@ -23,10 +25,10 @@ class PendaftarNilaiResource extends JsonResource
                 ['key' => 'inisiatifKreativitas', 'label' => 'Inisiatif & Kreativitas', 'skor' => (float) $this->inisiatif_kreativitas],
                 ['key' => 'disiplin', 'label' => 'Disiplin', 'skor' => (float) $this->disiplin],
             ] : [],
-            'suratKeteranganUrl' => $this->is_published && $this->surat_keterangan_path
+            'suratKeteranganUrl' => (!$forAi && $this->is_published && $this->surat_keterangan_path)
                 ? Storage::disk('public')->url($this->surat_keterangan_path)
                 : null,
-            'suratKeteranganName' => $this->is_published ? $this->surat_keterangan_name : null,
+            'suratKeteranganName' => (!$forAi && $this->is_published) ? $this->surat_keterangan_name : null,
         ];
     }
 }

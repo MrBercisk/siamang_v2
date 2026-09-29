@@ -42,5 +42,8 @@ return [
         'sync_past_days'   => 30,   // rentang tarik: 30 hari ke belakang
         'sync_future_days' => 180,  // ... sampai 180 hari ke depan
     ],
+    'n8n' => [
+        'webhook_url' => env('N8N_WEBHOOK_URL'),
+    ],
 
 ];
