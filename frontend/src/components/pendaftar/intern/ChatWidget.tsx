@@ -54,6 +54,26 @@ const markdownComponents = {
   ),
 };
 
+const SUGGESTED_PROMPTS: Record<ChatAudience, string[]> = {
+  public: [
+    'Kapan periode magang aktif?',
+    'Lowongan apa yang masih tersedia?',
+    'Apa syarat pendaftaran?',
+    'Apa kontak resmi SIAMANG?',
+  ],
+  applicant: [
+    'Bagaimana status pendaftaran saya?',
+    'Tampilkan riwayat pendaftaran saya.',
+  ],
+  intern: [
+    'Berapa nilai dan siapa mentor saya?',
+    'Kapan jadwal bimbingan saya?',
+    'Berapa persen progress magang saya?',
+    'Tampilkan catatan progress saya.',
+    'Bagaimana status laporan magang saya?',
+  ],
+};
+
 interface ChatWidgetProps {
   publicMode?: boolean;
   audience?: ChatAudience;
@@ -118,13 +138,22 @@ export function ChatWidget({ publicMode = false, audience }: ChatWidgetProps) {
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-slate-50/60">
             {messages.length === 0 && (
-              <p className="text-[11px] text-slate-400 text-center mt-6">
-                {isPublic
-                  ? 'Tanyakan periode aktif, lowongan, syarat pendaftaran, atau kontak resmi SIAMANG.'
-                  : chatAudience === 'applicant'
-                  ? 'Tanyakan status pendaftaran atau riwayat pendaftaran Anda.'
-                  : 'Coba tanya: &quot;Berapa nilai magang saya?&quot; atau &quot;Kapan jadwal bimbingan saya?&quot;'}
-              </p>
+              <div className="mt-5 space-y-2">
+                <p className="text-[11px] text-slate-400 text-center">Contoh pertanyaan</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {SUGGESTED_PROMPTS[chatAudience].map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => void sendMessage(prompt)}
+                      disabled={sending}
+                      className="max-w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left text-[11px] leading-snug text-slate-600 hover:border-[#1f877c] hover:bg-[#E6F7F3] hover:text-[#005c55] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {messages.map((msg) => (
