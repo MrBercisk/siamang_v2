@@ -6,7 +6,12 @@ use Illuminate\Support\Facades\Http;
 
 class N8nService
 {
-    public function sendMessage(string $message, string $token, ?string $sessionId = null): array
+    public function sendMessage(
+        string $message,
+        ?string $token,
+        ?string $sessionId = null,
+        string $audience = 'intern'
+    ): array
     {
         $response = Http::timeout(90)->post(
             config('services.n8n.webhook_url'),
@@ -14,6 +19,7 @@ class N8nService
                 'message'    => $message,
                 'token'      => $token,
                 'session_id' => $sessionId,
+                'audience'   => $audience,
             ]
         );
 

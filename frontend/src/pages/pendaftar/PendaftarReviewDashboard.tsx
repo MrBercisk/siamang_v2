@@ -6,7 +6,7 @@ import { ProfileView } from '../../components/pendaftar/ProfileView';
 import { PendaftaranFormView } from '../../components/pendaftar/pendaftaran/PendaftaranFormView';
 import { ReviewHeader } from '../../components/pendaftar/layout/ReviewHeader';
 import { ReviewSidebar, ReviewTab, PendaftaranLockReason } from '../../components/pendaftar/layout/ReviewSidebar';
-import { HelpChatWidget } from '../../components/pendaftar/layout/HelpChatWidget';
+import { ChatWidget } from '../../components/pendaftar/intern/ChatWidget';
 import { ReviewDashboardTab } from '../../components/pendaftar/tabs/ReviewDashboardTab';
 import { showWarningAlert } from '../../utils/swal';
 
@@ -155,7 +155,7 @@ export function PendaftarReviewDashboard({
         </main>
       </div>
 
-      <HelpChatWidget />
+      <ChatWidget audience="applicant" />
     </div>
   );
 }

@@ -43,11 +43,13 @@ export class ApiError extends Error {
 
 interface RequestOptions extends RequestInit {
   data?: unknown;
+  skipAuth?: boolean;
 }
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const { data, skipAuth, ...requestOptions } = options;
   const token = getStoredToken();
-  const isFormData = options.data instanceof FormData;
+  const isFormData = data instanceof FormData;
 
   const headers: Record<string, string> = {
     'Accept': 'application/json',
@@ -58,17 +60,17 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
     ...(options.headers as Record<string, string> || {}),
   };
 
-  if (token) {
+  if (token && !skipAuth) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
   const config: RequestInit = {
-    ...options,
+    ...requestOptions,
     headers,
   };
 
-  if (options.data) {
-    config.body = isFormData ? (options.data as FormData) : JSON.stringify(options.data);
+  if (data !== undefined) {
+    config.body = isFormData ? (data as FormData) : JSON.stringify(data);
   }
 
   const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;

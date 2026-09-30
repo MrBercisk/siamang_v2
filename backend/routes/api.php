@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\Pendaftar\PendaftarLaporanController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarNilaiController;
 use App\Http\Controllers\Api\Pendaftar\PendaftarProgressController;
 use App\Http\Controllers\Api\N8nController;
+use App\Http\Controllers\Api\PublicInfoController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -42,16 +43,24 @@ Route::prefix('auth')->group(function () {
 Route::get('/applications/track', [ApplicationController::class, 'track']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/applications/my-status', [ApplicationController::class, 'myStatus']);
+    Route::get('/applications/my-history', [ApplicationController::class, 'myHistory']);
     Route::get('/applications', [ApplicationController::class, 'index']);
     Route::post('/applications', [ApplicationController::class, 'store']);
+    Route::post('/applicant/chat', [N8nController::class, 'applicantChat'])
+        ->middleware(['role:applicant', 'throttle:10,1']);
 });
 
 Route::get('/periodes/active', [PeriodeController::class, 'active']);
+Route::get('/public/requirements', [PublicInfoController::class, 'requirements']);
+Route::get('/public/contact', [PublicInfoController::class, 'contact']);
 
 Route::apiResource('bidangs', BidangController::class)->only(['index', 'show']);
 Route::apiResource('kategoris', KategoriController::class)->only(['index', 'show']);
 Route::apiResource('periodes', PeriodeController::class)->only(['index', 'show']);
+Route::get('/lowongans/{lowongan}/ai-detail', [LowonganController::class, 'aiDetail']);
 Route::apiResource('lowongans', LowonganController::class)->only(['index', 'show']);
+Route::post('/public/chat', [N8nController::class, 'publicChat'])->middleware('throttle:10,1');
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::apiResource('bidangs', BidangAdminController::class)->only(['store', 'update', 'destroy']);

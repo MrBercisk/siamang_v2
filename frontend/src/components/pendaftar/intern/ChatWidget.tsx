@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useInternChat } from '../hooks/useInternChat';
+import { ChatAudience, useInternChat } from '../hooks/useInternChat';
 
 // Mapping elemen markdown -> class Tailwind, disamakan dengan skala teks (text-xs)
 // yang dipakai komponen lain di dashboard peserta.
@@ -54,10 +54,17 @@ const markdownComponents = {
   ),
 };
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  publicMode?: boolean;
+  audience?: ChatAudience;
+}
+
+export function ChatWidget({ publicMode = false, audience }: ChatWidgetProps) {
+  const chatAudience = audience ?? (publicMode ? 'public' : 'intern');
+  const isPublic = chatAudience === 'public';
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { messages, sending, sendMessage } = useInternChat();
+  const { messages, sending, sendMessage } = useInternChat(chatAudience);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -85,7 +92,7 @@ export function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#1f877c] text-white shadow-xl flex items-center justify-center hover:bg-[#186b62] transition-colors cursor-pointer"
+        className={`fixed ${isPublic ? (open ? 'hidden' : 'bottom-24') : 'bottom-5'} right-5 z-40 w-14 h-14 rounded-full bg-[#1f877c] text-white shadow-xl flex items-center justify-center hover:bg-[#186b62] transition-colors cursor-pointer`}
         aria-label="Buka asisten SIAMANG"
       >
         <span className="material-symbols-outlined text-2xl">{open ? 'close' : 'chat'}</span>
@@ -99,13 +106,24 @@ export function ChatWidget() {
               <p className="text-xs font-bold leading-none">Asisten SIAMANG</p>
               <p className="text-[10px] text-teal-50/80 mt-0.5">Tanya seputar magangmu</p>
             </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="ml-auto w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors"
+              aria-label="Tutup asisten SIAMANG"
+            >
+              <span className="material-symbols-outlined text-lg">close</span>
+            </button>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3 bg-slate-50/60">
             {messages.length === 0 && (
               <p className="text-[11px] text-slate-400 text-center mt-6">
-                Coba tanya: &quot;Berapa nilai magang saya?&quot; atau &quot;Kapan jadwal bimbingan
-                saya?&quot;
+                {isPublic
+                  ? 'Tanyakan periode aktif, lowongan, syarat pendaftaran, atau kontak resmi SIAMANG.'
+                  : chatAudience === 'applicant'
+                  ? 'Tanyakan status pendaftaran atau riwayat pendaftaran Anda.'
+                  : 'Coba tanya: &quot;Berapa nilai magang saya?&quot; atau &quot;Kapan jadwal bimbingan saya?&quot;'}
               </p>
             )}
 

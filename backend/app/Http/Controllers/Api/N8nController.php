@@ -11,18 +11,41 @@ class N8nController extends Controller
 {
     public function chat(Request $request, N8nService $n8nService): JsonResponse
     {
-        $request->validate([
+        $token = $request->bearerToken();
+        abort_if(! $token, 401, 'Token tidak ditemukan.');
+
+        return $this->sendChat($request, $n8nService, $token, 'intern');
+    }
+
+    public function publicChat(Request $request, N8nService $n8nService): JsonResponse
+    {
+        return $this->sendChat($request, $n8nService, null, 'public');
+    }
+
+    public function applicantChat(Request $request, N8nService $n8nService): JsonResponse
+    {
+        $token = $request->bearerToken();
+        abort_if(! $token, 401, 'Token tidak ditemukan.');
+
+        return $this->sendChat($request, $n8nService, $token, 'applicant');
+    }
+
+    private function sendChat(
+        Request $request,
+        N8nService $n8nService,
+        ?string $token,
+        string $audience
+    ): JsonResponse {
+        $validated = $request->validate([
             'message'    => ['required', 'string', 'max:2000'],
             'session_id' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $token = $request->bearerToken();
-        abort_if(! $token, 401, 'Token tidak ditemukan.');
-
         $result = $n8nService->sendMessage(
-            $request->string('message')->toString(),
+            $validated['message'],
             $token,
-            $request->string('session_id')->toString() ?: null
+            $validated['session_id'] ?? null,
+            $audience
         );
 
         return response()->json($result);

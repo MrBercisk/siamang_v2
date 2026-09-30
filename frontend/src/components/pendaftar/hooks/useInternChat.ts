@@ -1,7 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { ApiError } from '../../../lib/api';
-import { sendInternChatMessage } from './chatApplicantApi';
+import {
+  sendApplicantChatMessage,
+  sendInternChatMessage,
+  sendPublicChatMessage,
+} from './chatApplicantApi';
 import type { ChatMessage } from '../../../types/chat';
+
+export type ChatAudience = 'public' | 'applicant' | 'intern';
 
 function createMessage(role: ChatMessage['role'], content: string, isError = false): ChatMessage {
   return {
@@ -13,7 +19,7 @@ function createMessage(role: ChatMessage['role'], content: string, isError = fal
   };
 }
 
-export function useInternChat() {
+export function useInternChat(audience: ChatAudience = 'intern') {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sending, setSending] = useState(false);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
@@ -26,7 +32,11 @@ export function useInternChat() {
     setSending(true);
 
     try {
-      const reply = await sendInternChatMessage(trimmed, sessionIdRef.current);
+      const reply = audience === 'public'
+        ? await sendPublicChatMessage(trimmed, sessionIdRef.current)
+        : audience === 'applicant'
+        ? await sendApplicantChatMessage(trimmed, sessionIdRef.current)
+        : await sendInternChatMessage(trimmed, sessionIdRef.current);
       setMessages((prev) => [...prev, createMessage('assistant', reply)]);
     } catch (err) {
       const msg = err instanceof ApiError
@@ -36,7 +46,7 @@ export function useInternChat() {
     } finally {
       setSending(false);
     }
-  }, [sending]);
+  }, [sending, audience]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

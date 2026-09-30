@@ -73,7 +73,7 @@ siamang/
    N8N_WEBHOOK_URL=https://<HOST-N8N>/webhook/<WEBHOOK-PATH>
    ```
 
-   `N8N_WEBHOOK_URL` harus menunjuk ke webhook workflow n8n yang aktif. Workflow menerima `message`, `token`, dan `session_id`, lalu mengembalikan respons JSON dengan `success` dan `message`. Endpoint chat tersedia bagi pengguna yang sudah login dengan role `intern`.
+   `N8N_WEBHOOK_URL` harus menunjuk ke webhook workflow n8n yang aktif. Workflow menerima `message`, `token`, `session_id`, dan `audience`, lalu mengembalikan respons JSON dengan `success` dan `message`. Chat peserta magang tersedia setelah login dengan role `intern`; pengunjung Home/Info dapat bertanya tanpa login melalui `/api/public/chat`, dengan `token: null` dan `audience: public`. Pastikan workflow memakai tool publik `get_periode_aktif` dan `get_lowongan` untuk permintaan guest.
 
    Nilai database di atas hanya untuk development lokal. Ganti seluruh kredensial dan konfigurasi sebelum deployment.
 
