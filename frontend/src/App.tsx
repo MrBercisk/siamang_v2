@@ -4,6 +4,7 @@ import { AnnouncementBar } from './components/AnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ScrollToTop } from './components/ScrollToTop';
+import { ChatWidget } from './components/pendaftar/intern/ChatWidget';
 
 import { HomePage } from './pages/HomePage';
 import { InfoPage } from './pages/InfoPage';
@@ -206,6 +207,9 @@ export function App() {
       </main>
 
       {!isFullScreenPage && <Footer onNavigate={(page) => handleNavigate(page)} />}
+      {!user && (currentPage === 'home' || currentPage === 'info') && (
+        <ChatWidget publicMode />
+      )}
       {!isFullScreenPage && <ScrollToTop />}
     </div>
   );

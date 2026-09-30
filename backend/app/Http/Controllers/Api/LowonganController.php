@@ -32,4 +32,32 @@ class LowonganController extends Controller
             'data' => new LowonganResource($lowongan),
         ]);
     }
+
+    public function aiDetail(Lowongan $lowongan): JsonResponse
+    {
+        $lowongan->load(['periode', 'kategori.bidang']);
+
+        abort_unless(
+            $lowongan->is_active && $lowongan->filled < $lowongan->kuota,
+            404,
+            'Lowongan tidak tersedia.'
+        );
+
+        return response()->json([
+            'data' => [
+                'id' => $lowongan->id,
+                'project' => $lowongan->project,
+                'definisi' => $lowongan->definisi,
+                'detailKebutuhan' => $lowongan->detail_kebutuhan,
+                'kategori' => $lowongan->kategori?->name,
+                'bidang' => $lowongan->kategori?->bidang?->name,
+                'periode' => $lowongan->periode?->name,
+                'periodeMulai' => $lowongan->periode?->start_date?->toDateString(),
+                'periodeSelesai' => $lowongan->periode?->end_date?->toDateString(),
+                'kuota' => $lowongan->kuota,
+                'terisi' => $lowongan->filled,
+                'sisaKuota' => max($lowongan->kuota - $lowongan->filled, 0),
+            ],
+        ]);
+    }
 }

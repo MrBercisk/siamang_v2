@@ -15,6 +15,29 @@ export async function sendInternChatMessage(message: string, sessionId: string):
     data: { message, session_id: sessionId },
   });
 
+  return readChatReply(res);
+}
+
+export async function sendPublicChatMessage(message: string, sessionId: string): Promise<string> {
+  const res = await apiRequest<ChatApiResponse>('/public/chat', {
+    method: 'POST',
+    data: { message, session_id: sessionId },
+    skipAuth: true,
+  });
+
+  return readChatReply(res);
+}
+
+export async function sendApplicantChatMessage(message: string, sessionId: string): Promise<string> {
+  const res = await apiRequest<ChatApiResponse>('/applicant/chat', {
+    method: 'POST',
+    data: { message, session_id: sessionId },
+  });
+
+  return readChatReply(res);
+}
+
+function readChatReply(res: ChatApiResponse): string {
   if (!res.success || !res.message) {
     throw new Error('Format respons chat tidak valid.');
   }

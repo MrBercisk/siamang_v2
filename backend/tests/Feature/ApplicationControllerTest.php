@@ -113,6 +113,71 @@ class ApplicationControllerTest extends TestCase
         $response->assertUnauthorized();
     }
 
+    public function test_user_dapat_melihat_status_pendaftaran_ringkas_miliknya(): void
+    {
+        Application::factory()->create([
+            'user_id' => $this->user->id,
+            'periode_id' => $this->periode->id,
+            'bidang_id' => $this->bidang->id,
+            'kategori_id' => $this->kategori->id,
+            'lowongan_id' => $this->lowongan->id,
+            'registration_number' => 'MAG-2026-000101',
+            'status' => 'reviewing',
+            'admin_notes' => 'Berkas sedang diperiksa.',
+        ]);
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/applications/my-status')
+            ->assertOk()
+            ->assertJsonPath('data.registrationNumber', 'MAG-2026-000101')
+            ->assertJsonPath('data.status', 'reviewing')
+            ->assertJsonPath('data.notes', 'Berkas sedang diperiksa.')
+            ->assertJsonMissingPath('data.email');
+    }
+
+    public function test_user_hanya_melihat_riwayat_pendaftarannya_sendiri(): void
+    {
+        Application::factory()->create([
+            'user_id' => $this->user->id,
+            'periode_id' => $this->periode->id,
+            'bidang_id' => $this->bidang->id,
+            'kategori_id' => $this->kategori->id,
+            'lowongan_id' => $this->lowongan->id,
+            'registration_number' => 'MAG-2026-000102',
+        ]);
+
+        $otherUser = User::factory()->create(['role' => 'applicant']);
+        Application::factory()->create([
+            'user_id' => $otherUser->id,
+            'periode_id' => $this->periode->id,
+            'bidang_id' => $this->bidang->id,
+            'kategori_id' => $this->kategori->id,
+            'lowongan_id' => $this->lowongan->id,
+            'registration_number' => 'MAG-2026-000103',
+        ]);
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/applications/my-history')
+            ->assertOk()
+            ->assertJsonFragment(['registrationNumber' => 'MAG-2026-000102'])
+            ->assertJsonMissing(['registrationNumber' => 'MAG-2026-000103'])
+            ->assertJsonMissingPath('data.0.email');
+    }
+
+    public function test_lowongan_ai_detail_hanya_menampilkan_lowongan_yang_masih_tersedia(): void
+    {
+        $this->getJson("/api/lowongans/{$this->lowongan->id}/ai-detail")
+            ->assertOk()
+            ->assertJsonPath('data.id', $this->lowongan->id)
+            ->assertJsonPath('data.sisaKuota', 5)
+            ->assertJsonMissingPath('data.email');
+
+        $this->lowongan->update(['filled' => 5]);
+
+        $this->getJson("/api/lowongans/{$this->lowongan->id}/ai-detail")
+            ->assertNotFound();
+    }
+
     public function test_user_dapat_membuat_application_baru(): void
     {
         $payload = [
