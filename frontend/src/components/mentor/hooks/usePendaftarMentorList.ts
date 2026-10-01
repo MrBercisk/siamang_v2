@@ -4,8 +4,6 @@ import type { PendaftarData } from '../../../types/pendaftar';
 import { fetchPendaftarList } from './pendaftarMentorApi';
 
 /**
- * Lokasi file: src/components/mentor/hooks/usePendaftarMentorList.ts
- *
  * Daftar pendaftar pada kategori yang diampu mentor yang sedang login.
  * Pencarian & filter dilakukan di komponen (client-side), sama seperti
  * halaman admin.

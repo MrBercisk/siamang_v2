@@ -8,7 +8,7 @@ import {
 import { LowonganDetail } from '../hooks/useInternshipData';
 import { InternshipTabKey } from '../types/home';
 import { NavigationTabs } from './home/NavigationTabs';
-import { TimelineTab } from './home/TimelineTab';
+import { TimelineTab } from './home/TimelineTab'; 
 import { BidangTab } from './home/BidangTab';
 import { PersyaratanTab } from './home/PersyaratanTab';
 import { StatusTab } from './home/StatusTab';
@@ -21,19 +21,17 @@ interface InternshipInfoSectionProps {
   schedules: TimelineSchedule[];
   requirements: ApplicationRequirement[];
   applications: ApplicationStatus[];
-  onApplyCategory?: (category: InternshipCategory) => void;
   onNavigateRegister?: () => void;
 }
 
 export const InternshipInfoSection = memo(function InternshipInfoSection({
-  categories,
+  lowongans,
   schedules,
-  onApplyCategory,
 }: InternshipInfoSectionProps) {
   const [activeTab, setActiveTab] = useState<InternshipTabKey>('bidang');
 
   const openWhatsApp = () => {
-    window.open(WHATSAPP_CONTACT_URL, '_blank');
+    window.open(WHATSAPP_CONTACT_URL, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -45,11 +43,7 @@ export const InternshipInfoSection = memo(function InternshipInfoSection({
           {activeTab === 'timeline' && <TimelineTab schedules={schedules} />}
 
           {activeTab === 'bidang' && (
-            <BidangTab
-              categories={categories}
-              onApplyCategory={onApplyCategory}
-              onContactWhatsApp={openWhatsApp}
-            />
+            <BidangTab lowongans={lowongans} onContactWhatsApp={openWhatsApp} />
           )}
 
           {activeTab === 'persyaratan' && <PersyaratanTab />}
