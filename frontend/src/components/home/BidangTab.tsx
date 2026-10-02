@@ -1,12 +1,12 @@
-import { InternshipCategory } from '../../types/internship';
+import { LowonganDetail } from '../../hooks/useInternshipData';
 
 interface BidangTabProps {
-  categories: InternshipCategory[];
-  onApplyCategory?: (category: InternshipCategory) => void;
+  lowongans: LowonganDetail[];
   onContactWhatsApp: () => void;
 }
 
-export function BidangTab({ categories, onApplyCategory, onContactWhatsApp }: BidangTabProps) {
+
+export function BidangTab({ lowongans, onContactWhatsApp }: BidangTabProps) {
   return (
     <div className="space-y-8">
       {/* Section Header */}
@@ -26,13 +26,13 @@ export function BidangTab({ categories, onApplyCategory, onContactWhatsApp }: Bi
 
       {/* Grid Cards — satu kartu per Lowongan/Proyek */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {categories.length === 0 && (
+        {lowongans.length === 0 && (
           <div className="md:col-span-3 text-center py-10 text-sm text-slate-400">
             Belum ada lowongan magang yang tersedia saat ini.
           </div>
         )}
 
-        {categories.map((cat) => (
+        {lowongans.map((cat) => (
           <div
             key={cat.id}
             className="bg-white rounded-2xl border border-slate-200/90 p-6 flex flex-col justify-between shadow-2xs hover:shadow-md transition-shadow"
@@ -79,15 +79,7 @@ export function BidangTab({ categories, onApplyCategory, onContactWhatsApp }: Bi
               </span>
             </div>
 
-            {onApplyCategory && (
-              <button
-                type="button"
-                onClick={() => onApplyCategory(cat)}
-                className="mt-4 w-full bg-[#1f877c] hover:bg-[#196e65] text-white font-bold text-xs py-2.5 rounded-xl transition-colors cursor-pointer"
-              >
-                Daftar Lowongan Ini
-              </button>
-            )}
+
           </div>
         ))}
       </div>
