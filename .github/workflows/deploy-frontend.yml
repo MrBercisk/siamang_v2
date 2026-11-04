@@ -1,0 +1,107 @@
+name: Deploy Frontend (Vue)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-production
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Vue
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Packages
+        run: npm ci
+
+      - name: Check Environment
+        run: |
+          test -n "$VITE_API_URL" || (echo "VITE_API_URL kosong!" && exit 1)
+          test -n "$VITE_STORAGE_URL" || (echo "VITE_STORAGE_URL kosong!" && exit 1)
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_STORAGE_URL: ${{ secrets.VITE_STORAGE_URL }}
+
+      - name: Create Environment File
+        run: |
+          cat <<EOF > .env
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_STORAGE_URL=${{ secrets.VITE_STORAGE_URL }}
+          EOF
+
+      - name: Build Vue
+        run: npm run build
+
+      # Langkah di bawah hanya jalan untuk push ke main / manual dispatch,
+      # bukan untuk pull request (PR cukup sampai build).
+
+      - name: Backup & Bersihkan Assets Lama
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+
+            mkdir -p ~/backups/siamang
+            mkdir -p ~/siamang/frontend
+            cd ~/siamang/frontend
+
+            # Backup hanya build frontend (bukan seluruh folder)
+            if [ -d assets ] || [ -f index.html ]; then
+              tar -czf ~/backups/siamang/build_$(date +%Y%m%d_%H%M%S).tar.gz $(ls -d assets index.html 2>/dev/null) \
+                || echo "WARNING: backup gagal, lanjut deploy tanpa backup"
+              ls -t ~/backups/siamang/build_*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm --
+            fi
+
+            # Hapus assets lama saja (hash file Vite berubah tiap build).
+            # .htaccess dan folder lain di folder ini TIDAK disentuh.
+            rm -rf ~/siamang/frontend/assets
+
+      - name: Upload Vue Build
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "frontend/dist/**"
+          target: "~/siamang/frontend"
+          strip_components: 2
+          overwrite: true
+
+      - name: Deployment Success
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: echo "Frontend deployment berhasil!"
