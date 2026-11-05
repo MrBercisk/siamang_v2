@@ -16,7 +16,7 @@ const SERVER_ORIGIN = ENV.VITE_STORAGE_URL
   || (BASE_URL.startsWith('http')
     ? BASE_URL.replace(/\/api\/?$/, '')
     : 'http://localhost:8001');
-    
+
 export function getStoredToken(): string | null {
   return localStorage.getItem('si_amang_token');
 }
@@ -158,12 +158,16 @@ export async function trackApplication(
 
 export function resolveStorageUrl(filePath?: string | null): string | null {
   if (!filePath) return null;
-  if (/^https?:\/\//i.test(filePath)) return filePath;
+
+  if (/^https?:\/\//i.test(filePath)) {
+    return filePath;
+  }
 
   const cleanPath = filePath.replace(/^\/+/, '');
-  const withStoragePrefix = cleanPath.startsWith('storage/') ? cleanPath : `storage/${cleanPath}`;
 
-  return `${SERVER_ORIGIN}/${withStoragePrefix}`;
+  const normalizedPath = cleanPath.replace(/^(storage\/)+/, '');
+
+  return `${SERVER_ORIGIN}/storage/${normalizedPath}`;
 }
 
 // Default initial data for preview mode fallback
