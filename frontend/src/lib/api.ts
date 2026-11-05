@@ -4,12 +4,19 @@
  */
 
 const ENV = (import.meta as unknown as {
-  env?: { VITE_API_BASE_URL?: string; VITE_API_ORIGIN?: string };
+  env?: {
+    VITE_API_URL?: string;
+    VITE_STORAGE_URL?: string;
+  };
 }).env ?? {};
-const BASE_URL = ENV.VITE_API_BASE_URL || '/api';
-const SERVER_ORIGIN = ENV.VITE_API_ORIGIN
-  || (BASE_URL.startsWith('http') ? BASE_URL.replace(/\/api\/?$/, '') : 'http://localhost:8001');
 
+const BASE_URL = ENV.VITE_API_URL || '/api';
+
+const SERVER_ORIGIN = ENV.VITE_STORAGE_URL
+  || (BASE_URL.startsWith('http')
+    ? BASE_URL.replace(/\/api\/?$/, '')
+    : 'http://localhost:8001');
+    
 export function getStoredToken(): string | null {
   return localStorage.getItem('si_amang_token');
 }
