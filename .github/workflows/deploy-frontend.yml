@@ -50,15 +50,11 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_STORAGE_URL: ${{ secrets.VITE_STORAGE_URL }}
 
-      - name: Create Environment File
-        run: |
-          cat <<EOF > .env
-          VITE_API_URL=${{ secrets.VITE_API_URL }}
-          VITE_STORAGE_URL=${{ secrets.VITE_STORAGE_URL }}
-          EOF
-
       - name: Build Vue
         run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_STORAGE_URL: ${{ secrets.VITE_STORAGE_URL }}
 
       # Langkah di bawah hanya jalan untuk push ke main / manual dispatch,
       # bukan untuk pull request (PR cukup sampai build).
