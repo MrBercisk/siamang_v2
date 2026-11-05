@@ -22,14 +22,25 @@ class ApplicationAdminTest extends TestCase
         parent::setUp();
 
         $this->admin = User::factory()->create(['role' => 'admin']);
-        $this->mentor = User::factory()->create(['role' => 'mentor']);
-        $this->pendaftar = User::factory()->create(['role' => 'applicant']);
+
+        $this->mentor = User::factory()->create([
+            'role' => 'mentor',
+            'status' => 'Aktif',
+        ]);
+
+        $this->pendaftar = User::factory()->create([
+            'role' => 'applicant',
+        ]);
 
         $this->application = Application::factory()->create([
             'user_id' => $this->pendaftar->id,
             'status' => 'reviewing',
             'mentor_id' => null,
         ]);
+
+        $this->mentor->kategoriDiampu()->attach(
+            $this->application->kategori_id
+        );
     }
 
     public function test_admin_dapat_melihat_daftar_mentor_yang_tersedia(): void

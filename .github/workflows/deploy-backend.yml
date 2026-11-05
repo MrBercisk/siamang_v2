@@ -30,7 +30,7 @@ jobs:
       - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: "8.4"
           extensions: mbstring, pdo_sqlite, sqlite3, bcmath, fileinfo
           coverage: none
 
@@ -76,10 +76,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup PHP 8.2
+      - name: Setup PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: "8.4"
           extensions: mbstring, pdo_mysql, bcmath, fileinfo
           coverage: none
 
@@ -112,7 +112,7 @@ jobs:
             cd ~/siamang/backend
 
             # Sesuaikan dengan versi PHP di server (cek: ls /opt/alt/ | grep php)
-            PHP_BIN="/opt/alt/php82/usr/bin/php"
+            PHP_BIN="/opt/alt/php84/usr/bin/php"
 
             if [ ! -f .env ]; then
               echo "ERROR: .env tidak ditemukan di server!"
