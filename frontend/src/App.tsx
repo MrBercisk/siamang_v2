@@ -210,7 +210,11 @@ export function App() {
       {!user && (currentPage === 'home' || currentPage === 'info') && (
         <ChatWidget publicMode />
       )}
-      {!isFullScreenPage && <ScrollToTop />}
+      {!isFullScreenPage && (
+        <div className="hidden md:block">
+          <ScrollToTop />
+        </div>
+      )}
     </div>
   );
 }
